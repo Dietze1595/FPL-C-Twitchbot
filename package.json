@@ -1,0 +1,24 @@
+{
+  "name": "FPL-Qualy-twitch-bot",
+  "version": "1.0.0",
+  "description": "I am a twitch bot example from Dietze_",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "tmi.js": "^1.7.1"
+  },
+  "engines": {
+    "node": "7.10.x"
+  },
+  "repository": {
+    "url": "https://dietze1595.github.io/"
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "twitch.tv"
+  ]
+}
