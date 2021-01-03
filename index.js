@@ -2,24 +2,23 @@
 
 const tmi = require("tmi.js");
 var axios = require('axios');
+const fs = require("fs"); 
 
-const Twitchname= "Dietze_";
 const steamID = "76561198078771373";
+
 const FaceitUsername = "-JDC";
 const FaceitID = "b87578f1-710e-4f92-8f59-d4f2344aaee8";
 const FaceitLeaderboardID = "??????????";
-
-const Bearertoken = "AAAAAAAAAA-BBBBBBBB-CCCCCCCCCCC"
-const Twitchtoken="oauth:AAAAAAAAAA-BBBBBBBB-CCCCCCCCCCC";
 
 var Players, lastmatchid;
 
 let client = new tmi.Client({
     identity: {
-        username: Twitchname,
-        password: Twitchtoken
+		username: config.username,
+		password: config.password
     },
-    channels: ["#dietze_"],
+    
+    channels: config.channel,
     options: {
         debug: false
     },
@@ -138,7 +137,7 @@ async function getlast(chan, user) {
 async function getFaceit(x, y, chan, user) {
     await axios.get('https://open.faceit.com/data/v4/leaderboards/' + FaceitLeaderboardID + '?offset=' + x + '&limit=' + y, {
         headers: {
-            'Authorization': 'Bearer ' + Bearertoken
+            'Authorization': 'Bearer ' + config.faceittoken
 		}
 	})
 	.then(response => {
