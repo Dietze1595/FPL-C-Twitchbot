@@ -1,0 +1,6 @@
+{
+    "username": "Twitchname",
+    "password": "TwitchOauthToken",
+    "channel": ["Channel"],
+    "faceittoken": "FaceitBearerToken"
+}
