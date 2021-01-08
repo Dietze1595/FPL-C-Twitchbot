@@ -1,16 +1,20 @@
-//            /leaderboards​/hubs​/{hub_id}​/seasons​/{season}    	--> HUBID = b35176d9-6022-47fa-938e-2be7541c8bac    Season = 41 --> LeaderboardID
+//            ​/leaderboards​/hubs​/{hub_id}​/seasons​/{season}    --> HUBID = b35176d9-6022-47fa-938e-2be7541c8bac    Season = 41
 
 const tmi = require("tmi.js");
 var axios = require('axios');
 const fs = require("fs"); 
 
+const config = JSON.parse(fs.readFileSync("cfg.json"));
+
 const steamID = "76561198078771373";
 
 const FaceitUsername = "-JDC";
 const FaceitID = "b87578f1-710e-4f92-8f59-d4f2344aaee8";
-const FaceitLeaderboardID = "??????????";
+const FaceitLeaderboardID = "??????????????";
+
 
 var Players, lastmatchid;
+
 
 let client = new tmi.Client({
     identity: {
@@ -18,7 +22,7 @@ let client = new tmi.Client({
 		password: config.password
     },
     
-    channels: config.channel,
+	channels: config.channel,
     options: {
         debug: false
     },
@@ -38,9 +42,10 @@ client.on("connected", (address, port) => {
 client.on("chat", (channel, userstate, commandMessage, self) => {
 	switch(commandMessage.split(" ")[0]){
 		case '!fpl':
+		case '!info':
 		case '!fplc':
 		case '!fpl-c':
-			client.say(channel, `@` + userstate["display-name"] + ` This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-31`);
+			client.say(channel, `@` + userstate["display-name"] + ` The FPL-Challenger will serve as a way for upcoming talent to compete their next step in Counter-Strike. This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
 			break;
 		case '!rank':
 		case '!leaderboard':
@@ -48,23 +53,18 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			getFaceit(51,100, channel, userstate["display-name"]);
 			break;
 		case '!stats':
-		case '!elo':
 			getStats(channel, userstate["display-name"]);
 			break;
 		case '!last':
 			getlast(channel, userstate["display-name"]);
 			break;
 		case '!cmd':
-			client.say(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !rank !stats !last`);
+			client.say(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !fpl-c !rank !stats !last`);
 			break;
 		default:
 		  break;
 	}  
 });
-
-setInterval(function(){ 
-	getlast(client.channels[0], "everyone") 
-}, 20000);
 
 async function getStats(chan, user) {
   await axios
@@ -100,7 +100,6 @@ async function getStats(chan, user) {
         avgKD = (KD / divid / 100).toFixed(2);
         avgKR = (KR / divid / 100).toFixed(2);
       
-		console.log(chan);
         client.say(
           chan,
           `@` + user +
@@ -128,7 +127,7 @@ async function getlast(chan, user) {
 			if(user == "everyone" && last.matchId == lastmatchid) return;
 			lastmatchid = last.matchId
 			var won = (last.teamId == last.i2) ? "won" : "lost";
-			client.say(chan, `@` + user + ` JDC ` + won + ` last map on ` + last.i1 + ` with a score of `+ last.i18 +`. Stats: - Kills: ` + last.i6 + ` - Assists: ` + last.i7 + ` - Deaths: ` + last.i8 + ` - HS%: ` + last.c4 + `%`);
+			client.say(chan, `@` + user + ` ` + FaceitUsername + ` ` + won + ` last map on ` + last.i1 + ` with a score of `+ last.i18 +`. Stats: - Kills: ` + last.i6 + ` - Assists: ` + last.i7 + ` - Deaths: ` + last.i8 + ` - HS%: ` + last.c4 + `%`);
 		}
 	})
 	.catch(function (error) {});
@@ -145,9 +144,9 @@ async function getFaceit(x, y, chan, user) {
 			isNull = true;
 		} else {
 			response.data.items.forEach((player) => {
-                if (player.player.nickname == '-jdc')
+                if (player.player.nickname == FaceitUsername)
 				{
-					client.say(chan, `@` + user + ` JDC's current rank is ` + player.position + `. Stats: - Streak: `+ player.current_streak +` - Won: ` + player.won + ` - Lost: ` + player.lost);
+					client.say(chan, `@` + user + ` ` +  FaceitUsername + `'s current rank is ` + player.position + `. Stats: - Streak: `+ player.current_streak +` - Won: ` + player.won + ` - Lost: ` + player.lost + ` | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
                 }
 			})
         }
