@@ -5,8 +5,6 @@ const fs = require("fs");
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-const steamID = "76561198078771373";
-
 const FaceitUsername = "-JDC";
 const FaceitID = "b87578f1-710e-4f92-8f59-d4f2344aaee8";
 const FaceitLeaderboardID = "5ff82dab146ce20013ac6394";
