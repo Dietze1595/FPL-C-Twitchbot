@@ -1,5 +1,4 @@
 //            ​/leaderboards​/hubs​/{hub_id}​/seasons​/{season}    --> HUBID = b35176d9-6022-47fa-938e-2be7541c8bac    Season = 41
-
 const tmi = require("tmi.js");
 var axios = require('axios');
 const fs = require("fs"); 
@@ -10,7 +9,7 @@ const steamID = "76561198078771373";
 
 const FaceitUsername = "-JDC";
 const FaceitID = "b87578f1-710e-4f92-8f59-d4f2344aaee8";
-const FaceitLeaderboardID = "??????????????";
+const FaceitLeaderboardID = "5ff82dab146ce20013ac6394";
 
 
 var Players, lastmatchid;
@@ -38,31 +37,37 @@ client.on("connected", (address, port) => {
   console.log(`Connected to ${address}:${port}`);
 });
 
-
 client.on("chat", (channel, userstate, commandMessage, self) => {
-	switch(commandMessage.split(" ")[0]){
-		case '!fpl':
-		case '!info':
-		case '!fplc':
-		case '!fpl-c':
-			client.say(channel, `@` + userstate["display-name"] + ` The FPL-Challenger will serve as a way for upcoming talent to compete their next step in Counter-Strike. This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
-			break;
-		case '!rank':
-		case '!leaderboard':
-			getFaceit(0,50, channel, userstate["display-name"]);
-			getFaceit(51,100, channel, userstate["display-name"]);
-			break;
-		case '!stats':
-			getStats(channel, userstate["display-name"]);
-			break;
-		case '!last':
-			getlast(channel, userstate["display-name"]);
-			break;
-		case '!cmd':
-			client.say(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !fpl-c !rank !stats !last`);
-			break;
-		default:
-		  break;
+	if(userstate["display-name"] != config.username){
+		switch(commandMessage.split(" ")[0]){
+			case '!fpl':
+			case '!info':
+			case '!fplc':
+			case '!fpl-c':
+				client.say(channel, `@` + userstate["display-name"] + ` The FPL-Challenger will serve as a way for upcoming talent to compete their next step in Counter-Strike. This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+				break;
+			case '!rank':
+			case '!leaderboard':
+				getFaceit(0,50, channel, userstate["display-name"]);
+				getFaceit(51,100, channel, userstate["display-name"]);
+				break;
+			case '!stats':
+				getStats(channel, userstate["display-name"]);
+				break;
+			case '!last':
+				getlast(channel, userstate["display-name"]);
+				break;
+			case '!cmd':
+			case '!command':
+			case '!commands':
+				client.say(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !fplc !rank !stats !last`);
+				break;
+			default:
+			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
+				getFaceit(0,50, channel, userstate["display-name"]);
+				getFaceit(51,100, channel, userstate["display-name"]);
+			  }*/
+		}
 	}  
 });
 
@@ -102,13 +107,7 @@ async function getStats(chan, user) {
       
         client.say(
           chan,
-          `@` + user +
-		  ` Inspected user: ` + FaceitUsername +
-          ` Here are the stats of the last ` + divid + ` matches: Avg. Kills: ` + avgKills +
-          ` - Avg. HS%: ` + avgHs +
-          `% - Avg. K/D: ` + avgKD +
-          ` - Avg. K/R: ` + avgKR
-        );
+          `@` + user + ` Here are the stats of the last ${divid} matches: Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
       }
     })
     .catch(function(error) {});
@@ -127,7 +126,7 @@ async function getlast(chan, user) {
 			if(user == "everyone" && last.matchId == lastmatchid) return;
 			lastmatchid = last.matchId
 			var won = (last.teamId == last.i2) ? "won" : "lost";
-			client.say(chan, `@` + user + ` ` + FaceitUsername + ` ` + won + ` last map on ` + last.i1 + ` with a score of `+ last.i18 +`. Stats: - Kills: ` + last.i6 + ` - Assists: ` + last.i7 + ` - Deaths: ` + last.i8 + ` - HS%: ` + last.c4 + `%`);
+			client.say(chan, `@` + user + ` JDC ${won} last map on ${last.i1} with a score of ${last.i18}. Stats: Kills: ${last.i6} - Assists: ${last.i7} - Deaths: ${last.i8} - HS%: ${last.c4}%`);
 		}
 	})
 	.catch(function (error) {});
@@ -143,12 +142,16 @@ async function getFaceit(x, y, chan, user) {
 		if (response.status !== 200) {
 			isNull = true;
 		} else {
-			response.data.items.forEach((player) => {
-                if (player.player.nickname == FaceitUsername)
-				{
-					client.say(chan, `@` + user + ` ` +  FaceitUsername + `'s current rank is ` + player.position + `. Stats: - Streak: `+ player.current_streak +` - Won: ` + player.won + ` - Lost: ` + player.lost + ` | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
-                }
-			})
+			if(response.data.leaderboard.status == 'UPCOMING'){
+				client.say(chan, `@` + user + ` There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
+			}else{
+				response.data.items.forEach((player) => {
+					if (player.player.nickname == FaceitUsername)
+					{
+						client.say(chan, `@` + user + ` JDC's current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+					}
+				})
+			}
         }
 	})
 	.catch(function (error) {});
