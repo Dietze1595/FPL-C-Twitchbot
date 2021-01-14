@@ -72,7 +72,7 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 async function getStats(chan, user) {
   await axios
     .get(
-      "https://api.faceit.com/stats/v1/stats/time/users/" + FaceitID + "/games/csgo",
+      "https://api.faceit.com/stats/v1/stats/time/users/" + config.faceitid + "/games/csgo",
     )
     .then(response => {
       if (response.status !== 200) {
@@ -114,7 +114,7 @@ async function getStats(chan, user) {
 
 async function getlast(chan, user) {
     await axios.get(
-		'https://api.faceit.com/stats/v1/stats/time/users/' + FaceitID + '/games/csgo?size=1', {
+		'https://api.faceit.com/stats/v1/stats/time/users/' + config.faceitid + '/games/csgo?size=1', {
 	})
 	.then(response => {
 		if (response.status !== 200) {
@@ -131,7 +131,7 @@ async function getlast(chan, user) {
 }
 
 async function getFaceit(x, y, chan, user) {
-    await axios.get('https://open.faceit.com/data/v4/leaderboards/' + FaceitLeaderboardID + '?offset=' + x + '&limit=' + y, {
+    await axios.get('https://open.faceit.com/data/v4/leaderboards/' + config.faceitleaderboardid + '?offset=' + x + '&limit=' + y, {
         headers: {
             'Authorization': 'Bearer ' + config.faceittoken
 		}
@@ -144,7 +144,7 @@ async function getFaceit(x, y, chan, user) {
 				client.say(chan, `@` + user + ` There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
 			}else{
 				response.data.items.forEach((player) => {
-					if (player.player.nickname == FaceitUsername)
+					if (player.player.nickname == config.faceitUsername)
 					{
 						client.say(chan, `@` + user + ` JDC's current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
 					}
