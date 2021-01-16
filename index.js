@@ -1,17 +1,12 @@
-//            ​/leaderboards​/hubs​/{hub_id}​/seasons​/{season}    --> HUBID = b35176d9-6022-47fa-938e-2be7541c8bac    Season = 41
+//            ​/leaderboards​/hubs​/{hub_id}​/seasons​/{season}    --> HUBID = b35176d9-6022-47fa-938e-2be7541c8bac
+
 const tmi = require("tmi.js");
 var axios = require('axios');
 const fs = require("fs"); 
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-const FaceitUsername = "-JDC";
-const FaceitID = "b87578f1-710e-4f92-8f59-d4f2344aaee8";
-const FaceitLeaderboardID = "5ff82dab146ce20013ac6394";
-
-
 var Players, lastmatchid;
-
 
 let client = new tmi.Client({
     identity: {
@@ -33,7 +28,9 @@ client.connect();
 
 client.on("connected", (address, port) => {
   console.log(`Connected to ${address}:${port}`);
+  client.action(config.channel, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
 });
+
 
 client.on("chat", (channel, userstate, commandMessage, self) => {
 	if(userstate["display-name"] != config.username){
@@ -42,12 +39,13 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!info':
 			case '!fplc':
 			case '!fpl-c':
-				client.say(channel, `@` + userstate["display-name"] + ` The FPL-Challenger will serve as a way for upcoming talent to compete their next step in Counter-Strike. This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+				client.action(channel, `@` + userstate["display-name"] + ` The FPL-Challenger will serve as a way for upcoming talent to compete their next step in Counter-Strike. This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
 				break;
 			case '!rank':
 			case '!leaderboard':
 				getFaceit(0,50, channel, userstate["display-name"]);
-				getFaceit(51,100, channel, userstate["display-name"]);
+				getFaceit(50,50, channel, userstate["display-name"]);
+				getFaceit(100,50, channel, userstate["display-name"]);
 				break;
 			case '!stats':
 				getStats(channel, userstate["display-name"]);
@@ -58,12 +56,13 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!cmd':
 			case '!command':
 			case '!commands':
-				client.say(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !fplc !rank !stats !last`);
+				client.action(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !fplc !rank !stats !last`);
 				break;
 			default:
 			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
 				getFaceit(0,50, channel, userstate["display-name"]);
-				getFaceit(51,100, channel, userstate["display-name"]);
+				getFaceit(50,50, channel, userstate["display-name"]);
+				getFaceit(100,50, channel, userstate["display-name"]);
 			  }*/
 		}
 	}  
@@ -103,7 +102,7 @@ async function getStats(chan, user) {
         avgKD = (KD / divid / 100).toFixed(2);
         avgKR = (KR / divid / 100).toFixed(2);
       
-        client.say(
+        client.action(
           chan,
           `@` + user + ` Here are the stats of the last ${divid} matches: Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
       }
@@ -124,7 +123,7 @@ async function getlast(chan, user) {
 			if(user == "everyone" && last.matchId == lastmatchid) return;
 			lastmatchid = last.matchId
 			var won = (last.teamId == last.i2) ? "won" : "lost";
-			client.say(chan, `@` + user + ` JDC ${won} last map on ${last.i1} with a score of ${last.i18}. Stats: Kills: ${last.i6} - Assists: ${last.i7} - Deaths: ${last.i8} - HS%: ${last.c4}%`);
+			client.action(chan, `@` + user + ` JDC ${won} last map on ${last.i1} with a score of ${last.i18}. Stats: Kills: ${last.i6} - Assists: ${last.i7} - Deaths: ${last.i8} - HS%: ${last.c4}%`);
 		}
 	})
 	.catch(function (error) {});
@@ -140,17 +139,13 @@ async function getFaceit(x, y, chan, user) {
 		if (response.status !== 200) {
 			isNull = true;
 		} else {
-			if(response.data.leaderboard.status == 'UPCOMING'){
-				client.say(chan, `@` + user + ` There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
-			}else{
-				response.data.items.forEach((player) => {
-					if (player.player.nickname == config.faceitUsername)
-					{
-						client.say(chan, `@` + user + ` JDC's current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
-					}
-				})
-			}
-        }
+			response.data.items.forEach((player) => {
+				if (player.player.nickname == config.faceitUsername)
+				{
+					client.action(chan, `@` + user + ` JDC's current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+				}
+			})
+		}
 	})
 	.catch(function (error) {});
 }
