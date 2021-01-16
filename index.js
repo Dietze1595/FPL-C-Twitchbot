@@ -1,5 +1,4 @@
-//            ​/leaderboards​/hubs​/{hub_id}​/seasons​/{season}    --> HUBID = b35176d9-6022-47fa-938e-2be7541c8bac
-
+//            ​/leaderboards​/hubs​/{hub_id}​/seasons​/{season}    --> HUBID = b35176d9-6022-47fa-938e-2be7541c8bac    Season = 41
 const tmi = require("tmi.js");
 var axios = require('axios');
 const fs = require("fs"); 
@@ -39,13 +38,23 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!info':
 			case '!fplc':
 			case '!fpl-c':
-				client.action(channel, `@` + userstate["display-name"] + ` The FPL-Challenger will serve as a way for upcoming talent to compete their next step in Counter-Strike. This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+				client.action(channel, `@` + userstate["display-name"] + ` This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
 				break;
 			case '!rank':
 			case '!leaderboard':
-				getFaceit(0,50, channel, userstate["display-name"]);
-				getFaceit(50,50, channel, userstate["display-name"]);
-				getFaceit(100,50, channel, userstate["display-name"]);
+				if (commandMessage.split(" ")[1] == undefined){
+					Faceitname = config.faceitUsername;
+					User = userstate["display-name"];
+				} else if(commandMessage.split(" ")[1].includes("@")) {
+					User = commandMessage.split(" ")[1].replace('@','');
+					Faceitname = config.faceitUsername;
+				} else {
+					User = userstate["display-name"];
+					Faceitname = commandMessage.split(" ")[1];
+				}					
+				getFaceit(0,50, channel, User, Faceitname);
+				getFaceit(50,50, channel, User, Faceitname);
+				getFaceit(100,50, channel, User, Faceitname);
 				break;
 			case '!stats':
 				getStats(channel, userstate["display-name"]);
@@ -56,13 +65,12 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!cmd':
 			case '!command':
 			case '!commands':
-				client.action(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !fplc !rank !stats !last`);
+				client.action(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !fplc !rank <Faceitname> !stats !last`);
 				break;
 			default:
 			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
 				getFaceit(0,50, channel, userstate["display-name"]);
-				getFaceit(50,50, channel, userstate["display-name"]);
-				getFaceit(100,50, channel, userstate["display-name"]);
+				getFaceit(51,100, channel, userstate["display-name"]);
 			  }*/
 		}
 	}  
@@ -129,7 +137,7 @@ async function getlast(chan, user) {
 	.catch(function (error) {});
 }
 
-async function getFaceit(x, y, chan, user) {
+async function getFaceit(x, y, chan, user, name) {
     await axios.get('https://open.faceit.com/data/v4/leaderboards/' + config.faceitleaderboardid + '?offset=' + x + '&limit=' + y, {
         headers: {
             'Authorization': 'Bearer ' + config.faceittoken
@@ -140,9 +148,9 @@ async function getFaceit(x, y, chan, user) {
 			isNull = true;
 		} else {
 			response.data.items.forEach((player) => {
-				if (player.player.nickname == config.faceitUsername)
+				if (player.player.nickname == name)
 				{
-					client.action(chan, `@` + user + ` JDC's current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+					client.action(chan, `@` + user + ` ${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
 				}
 			})
 		}
