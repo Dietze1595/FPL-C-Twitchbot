@@ -41,23 +41,23 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				faceitid = config.faceitid[index];
 			}
 		}); 
+		if(commandMessage.split(" ")[1].includes("@")) {
+			User = commandMessage.split(" ")[1].replace('@','');
+		} else {	
+			User = userstate["display-name"];
+		}
 		switch(commandMessage.split(" ")[0]){
 			case '!fpl':
 			case '!info':
 			case '!fplc':
 			case '!fpl-c':
-				client.action(channel, `@` + userstate["display-name"] + ` This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+				client.action(channel, `@` + User + ` This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
 				break;
 			case '!rank':
 			case '!leaderboard':
-				if (commandMessage.split(" ")[1] == undefined){
-					Faceitname = faceitUsername;
-					User = userstate["display-name"];
-				} else if(commandMessage.split(" ")[1].includes("@")) {
-					User = commandMessage.split(" ")[1].replace('@','');
+				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
 					Faceitname = faceitUsername;
 				} else {
-					User = userstate["display-name"];
 					Faceitname = commandMessage.split(" ")[1];
 				}					
 				getFaceit(0,50, channel, User, Faceitname);
@@ -65,15 +65,15 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				getFaceit(100,50, channel, User, Faceitname);
 				break;
 			case '!stats':
-				getStats(channel, userstate["display-name"], faceitid);
+				getStats(channel, User, faceitid);
 				break;
 			case '!last':
-				getlast(channel, userstate["display-name"], faceitid, faceitUsername);
+				getlast(channel, User, faceitid, faceitUsername);
 				break;
 			case '!cmd':
 			case '!command':
 			case '!commands':
-				client.action(channel, `@` + userstate["display-name"] + ` you can use the following Faceit FPL-C commands: !fplc !rank <Faceitname> !stats !last`);
+				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !fplc !rank <Faceitname> !stats !last`);
 				break;
 			default:
 			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
