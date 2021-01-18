@@ -153,12 +153,16 @@ async function getFaceit(x, y, chan, user, name) {
 		if (response.status !== 200) {
 			isNull = true;
 		} else {
-			response.data.items.forEach((player) => {
-				if (player.player.nickname == name)
-				{
-					client.action(chan, `@` + user + ` ${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
-				}
-			})
+			if(response.data.leaderboard.status == 'UPCOMING'){
+				client.action(chan, `@` + user + ` There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
+			}else{
+				response.data.items.forEach((player) => {
+					if (player.player.nickname == name)
+					{
+						client.action(chan, `@` + user + ` ${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+					}
+				})
+			}
 		}
 	})
 	.catch(function (error) {});
