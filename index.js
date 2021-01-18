@@ -27,12 +27,20 @@ client.connect();
 
 client.on("connected", (address, port) => {
   console.log(`Connected to ${address}:${port}`);
-  client.action(config.channel, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
+  config.channel.forEach((streamer, index) => {
+	  client.action(streamer, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername[index]} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
+	}
 });
 
 
 client.on("chat", (channel, userstate, commandMessage, self) => {
 	if(userstate["display-name"] != config.username){
+		config.channel.forEach((streamer, index) => {
+			if(channel == streamer){
+				faceitUsername = config.faceitUsername[index];
+				faceitid = config.faceitid[index];
+			}
+		}); 
 		switch(commandMessage.split(" ")[0]){
 			case '!fpl':
 			case '!info':
@@ -43,11 +51,11 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!rank':
 			case '!leaderboard':
 				if (commandMessage.split(" ")[1] == undefined){
-					Faceitname = config.faceitUsername;
+					Faceitname = faceitUsername;
 					User = userstate["display-name"];
 				} else if(commandMessage.split(" ")[1].includes("@")) {
 					User = commandMessage.split(" ")[1].replace('@','');
-					Faceitname = config.faceitUsername;
+					Faceitname = faceitUsername;
 				} else {
 					User = userstate["display-name"];
 					Faceitname = commandMessage.split(" ")[1];
@@ -57,10 +65,10 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				getFaceit(100,50, channel, User, Faceitname);
 				break;
 			case '!stats':
-				getStats(channel, userstate["display-name"]);
+				getStats(channel, userstate["display-name"], faceitid);
 				break;
 			case '!last':
-				getlast(channel, userstate["display-name"]);
+				getlast(channel, userstate["display-name"], faceitid, faceitUsername);
 				break;
 			case '!cmd':
 			case '!command':
@@ -76,10 +84,10 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 	}  
 });
 
-async function getStats(chan, user) {
+async function getStats(chan, user, idStats) {
   await axios
     .get(
-      "https://api.faceit.com/stats/v1/stats/time/users/" + config.faceitid + "/games/csgo",
+      "https://api.faceit.com/stats/v1/stats/time/users/" + idStats + "/games/csgo",
     )
     .then(response => {
       if (response.status !== 200) {
@@ -119,19 +127,18 @@ async function getStats(chan, user) {
 }
 
 
-async function getlast(chan, user) {
+async function getlast(chan, user, idLast, userLast) {
     await axios.get(
-		'https://api.faceit.com/stats/v1/stats/time/users/' + config.faceitid + '/games/csgo?size=1', {
+		'https://api.faceit.com/stats/v1/stats/time/users/' + idLast + '/games/csgo?size=1', {
 	})
 	.then(response => {
 		if (response.status !== 200) {
 			isNull = true;
 		} else {
 			last = response.data[0];
-			if(user == "everyone" && last.matchId == lastmatchid) return;
 			lastmatchid = last.matchId
 			var won = (last.teamId == last.i2) ? "won" : "lost";
-			client.action(chan, `@` + user + ` JDC ${won} last map on ${last.i1} with a score of ${last.i18}. Stats: Kills: ${last.i6} - Assists: ${last.i7} - Deaths: ${last.i8} - HS%: ${last.c4}%`);
+			client.action(chan, `@` + user + ` ${userLast} ${won} last map on ${last.i1} with a score of ${last.i18}. Stats: Kills: ${last.i6} - Assists: ${last.i7} - Deaths: ${last.i8} - HS%: ${last.c4}%`);
 		}
 	})
 	.catch(function (error) {});
