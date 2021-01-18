@@ -1,9 +1,9 @@
 {
     "username": "Twitchname",
     "password": "TwitchOauthToken",
-    "channel": ["Channel"],
     "faceittoken": "FaceitBearerToken",
-    "faceitUsername": "FaceitUsername",
-    "faceitid": "PlayerFaceitId",
-    "faceitleaderboardid": "FaceitLeaderboardId"
+    "faceitleaderboardid": "FaceitLeaderboardId",
+    "channel": ["Channel#1", "Channel#2"],
+	"faceitUsername": ["FaceitUsername#1","FaceitUsername#2"],
+    "faceitid": ["FaceitUserID#1","FaceitUserID#2"]
 }
