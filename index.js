@@ -35,17 +35,16 @@ client.on("connected", (address, port) => {
 
 client.on("chat", (channel, userstate, commandMessage, self) => {
 	if(userstate["display-name"] != config.username){
+		User = userstate["display-name"]
+
 		config.channel.forEach((streamer, index) => {
 			if(channel == streamer){
 				faceitUsername = config.faceitUsername[index];
 				faceitid = config.faceitid[index];
 			}
 		}); 
-		if(commandMessage.split(" ")[1].includes("@")) {
-			User = commandMessage.split(" ")[1].replace('@','');
-		} else {	
-			User = userstate["display-name"];
-		}
+		if(commandMessage.split(" ")[1].includes("@")) User = commandMessage.split(" ")[1].replace('@','');
+
 		switch(commandMessage.split(" ")[0]){
 			case '!fpl':
 			case '!info':
