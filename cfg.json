@@ -4,6 +4,6 @@
     "faceittoken": "FaceitBearerToken",
     "faceitleaderboardid": "FaceitLeaderboardId",
     "channel": ["Channel#1", "Channel#2"],
-	"faceitUsername": ["FaceitUsername#1","FaceitUsername#2"],
+    "faceitUsername": ["FaceitUsername#1","FaceitUsername#2"],
     "faceitid": ["FaceitUserID#1","FaceitUserID#2"]
 }
