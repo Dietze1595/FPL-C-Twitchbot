@@ -1,4 +1,3 @@
-//            ​/leaderboards​/hubs​/{hub_id}​/seasons​/{season}    --> HUBID = b35176d9-6022-47fa-938e-2be7541c8bac    Season = 41
 const tmi = require("tmi.js");
 var axios = require('axios');
 const fs = require("fs"); 
@@ -29,7 +28,7 @@ client.on("connected", (address, port) => {
   console.log(`Connected to ${address}:${port}`);
   config.channel.forEach((streamer, index) => {
 	  client.action(streamer, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername[index]} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
-	}
+	})
 });
 
 
@@ -43,14 +42,17 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				faceitid = config.faceitid[index];
 			}
 		}); 
-		if(commandMessage.split(" ")[1].includes("@")) User = commandMessage.split(" ")[1].replace('@','');
+		if(commandMessage.split(" ")[1] != undefined && commandMessage.split(" ")[1].includes("@")) User = commandMessage.split(" ")[1].replace('@','');
 
 		switch(commandMessage.split(" ")[0]){
+			case '!feedback':
+				client.action(channel, `@` + User + ` If you have any suggestions or bug reports - please send me a Steammessage: http://steamcommunity.com/id/Dietze_`);
+				break;
 			case '!fpl':
 			case '!info':
 			case '!fplc':
 			case '!fpl-c':
-				client.action(channel, `@` + User + ` This ladder is played on both Saturday and Sunday from 12:00 - 20:00 pm CET | Info: http://bit.ly/fplc-info | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+				client.action(channel, `@` + User + ` The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-43`);
 				break;
 			case '!rank':
 			case '!leaderboard':
@@ -72,7 +74,7 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!cmd':
 			case '!command':
 			case '!commands':
-				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !fplc !rank <Faceitname> !stats !last`);
+				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !fplc !rank <Faceitname> !stats !last !feedback`);
 				break;
 			default:
 			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
@@ -159,7 +161,7 @@ async function getFaceit(x, y, chan, user, name) {
 				response.data.items.forEach((player) => {
 					if (player.player.nickname == name)
 					{
-						client.action(chan, `@` + user + ` ${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/fplc-leaderboard-41`);
+						client.action(chan, `@` + user + ` ${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/FPL-C-43`);
 					}
 				})
 			}
