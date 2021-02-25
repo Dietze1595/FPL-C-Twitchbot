@@ -4,7 +4,7 @@ const fs = require("fs");
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-var Players, lastmatchid;
+var Players, lastmatchid, leaderboardId;
 
 let client = new tmi.Client({
     identity: {
@@ -25,11 +25,43 @@ let client = new tmi.Client({
 client.connect();
 
 client.on("connected", (address, port) => {
+  getMonthsPassed();
+  getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
+  
   console.log(`Connected to ${address}:${port}`);
   config.channel.forEach((streamer, index) => {
-	  client.action(streamer, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername[index]} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
+	  //client.action(streamer, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername[index]} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
 	})
 });
+
+
+
+const getMonthsPassed = () => {
+    const startDate = new Date(2017, 06, 01); // month start at 0
+    const currentDate = new Date();
+    const monthDifference =
+      (currentDate.getFullYear() - startDate.getFullYear()) * 12 +
+      (currentDate.getMonth() - startDate.getMonth());
+    return monthDifference;
+};
+
+async function getLeaderboardId(Hub, Season) {
+    await axios.get(
+		'https://open.faceit.com/data/v4/leaderboards/hubs/' + Hub + '/seasons/' + Season, {
+        headers: {
+            'Authorization': 'Bearer ' + config.faceittoken
+		}
+	})
+	.then(response => {
+		if (response.status !== 200) {
+			isNull = true;
+		} else {
+			leaderboardId = response.data.leaderboard.leaderboard_id;
+		}
+	})
+	.catch(function (error) {});
+}
+
 
 
 client.on("chat", (channel, userstate, commandMessage, self) => {
@@ -45,16 +77,25 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 		if(commandMessage.split(" ")[1] != undefined && commandMessage.split(" ")[1].includes("@")) User = commandMessage.split(" ")[1].replace('@','');
 
 		switch(commandMessage.split(" ")[0]){
+			case '!newmonth':
+				if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')){
+					getMonthsPassed();
+					client.action(channel, `Neuer Monat in der FPL-C Season. Season: ${getMonthsPassed("monthDifference")}`);
+					getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
+				}else{
+					client.action(channel, `@` + User + ` Du bist kein Mod`);
+				}
+				break;
 			case '!feedback':
 				client.action(channel, `@` + User + ` If you have any suggestions or bug reports - please send me a Steammessage: http://steamcommunity.com/id/Dietze_`);
 				break;
 			case '!fpl':
 			case '!info':
-			case '!fplc':
 			case '!fpl-c':
-				client.action(channel, `@` + User + ` The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-43`);
+				//client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-43`);
 				break;
 			case '!rank':
+			case '!fplc':
 			case '!leaderboard':
 				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
 					Faceitname = faceitUsername;
@@ -74,7 +115,7 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!cmd':
 			case '!command':
 			case '!commands':
-				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !fplc !rank <Faceitname> !stats !last !feedback`);
+				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !fplc !rank !stats !last !feedback`);
 				break;
 			default:
 			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
@@ -121,7 +162,7 @@ async function getStats(chan, user, idStats) {
       
         client.action(
           chan,
-          `@` + user + ` Here are the stats of the last ${divid} matches: Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
+          `Here are the stats of the last ${divid} matches: Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
       }
     })
     .catch(function(error) {});
@@ -139,14 +180,14 @@ async function getlast(chan, user, idLast, userLast) {
 			last = response.data[0];
 			lastmatchid = last.matchId
 			var won = (last.teamId == last.i2) ? "won" : "lost";
-			client.action(chan, `@` + user + ` ${userLast} ${won} last map on ${last.i1} with a score of ${last.i18}. Stats: Kills: ${last.i6} - Assists: ${last.i7} - Deaths: ${last.i8} - HS%: ${last.c4}%`);
+			client.action(chan, `${userLast} ${won} last map on ${last.i1} with a score of ${last.i18}. Stats: Kills: ${last.i6} - Assists: ${last.i7} - Deaths: ${last.i8} - HS%: ${last.c4}%`);
 		}
 	})
 	.catch(function (error) {});
 }
 
 async function getFaceit(x, y, chan, user, name) {
-    await axios.get('https://open.faceit.com/data/v4/leaderboards/' + config.faceitleaderboardid + '?offset=' + x + '&limit=' + y, {
+    await axios.get('https://open.faceit.com/data/v4/leaderboards/' + leaderboardId + '?offset=' + x + '&limit=' + y, {
         headers: {
             'Authorization': 'Bearer ' + config.faceittoken
 		}
@@ -156,12 +197,16 @@ async function getFaceit(x, y, chan, user, name) {
 			isNull = true;
 		} else {
 			if(response.data.leaderboard.status == 'UPCOMING'){
-				client.action(chan, `@` + user + ` There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
+				client.action(chan, `There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
 			}else{
-				response.data.items.forEach((player) => {
+				response.data.items.forEach((player, index) => {
 					if (player.player.nickname == name)
 					{
-						client.action(chan, `@` + user + ` ${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} | Leaderboard: http://bit.ly/FPL-C-43`);
+						if (index <= 1){
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points over the 3. place: ${player.points - response.data.items[2].points} | Leaderboard: http://bit.ly/FPL-C-43`);
+						} else {
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points needed for 2. place: ${response.data.items[1].points - player.points} | Leaderboard: http://bit.ly/FPL-C-43`);
+						}
 					}
 				})
 			}
