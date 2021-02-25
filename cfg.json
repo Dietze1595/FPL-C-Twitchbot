@@ -2,7 +2,7 @@
     "username": "Twitchname",
     "password": "TwitchOauthToken",
     "faceittoken": "FaceitBearerToken",
-    "faceitleaderboardid": "FaceitLeaderboardId",
+    "HubId": "fd5780d5-dd2f-4479-906c-57b8e41ae9d7",
     "channel": ["Channel#1", "Channel#2"],
     "faceitUsername": ["FaceitUsername#1","FaceitUsername#2"],
     "faceitid": ["FaceitUserID#1","FaceitUserID#2"]
