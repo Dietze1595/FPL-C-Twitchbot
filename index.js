@@ -4,14 +4,13 @@ const fs = require("fs");
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-var Players, lastmatchid, leaderboardId;
+var Players, lastmatchid, played, inList;
 
 let client = new tmi.Client({
     identity: {
 		username: config.username,
 		password: config.password
     },
-    
 	channels: config.channel,
     options: {
         debug: false
@@ -27,13 +26,17 @@ client.connect();
 client.on("connected", (address, port) => {
   getMonthsPassed();
   getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
-  
+
   console.log(`Connected to ${address}:${port}`);
   config.channel.forEach((streamer, index) => {
-	  //client.action(streamer, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername[index]} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
+	  client.action(streamer, `Bot successfully added. Please use !commands`);
 	})
 });
 
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 
 const getMonthsPassed = () => {
@@ -83,7 +86,7 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 					client.action(channel, `Neuer Monat in der FPL-C Season. Season: ${getMonthsPassed("monthDifference")}`);
 					getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
 				}else{
-					client.action(channel, `@` + User + ` Du bist kein Mod`);
+					client.action(channel, `@` + User + ` You are not a mod`);
 				}
 				break;
 			case '!feedback':
@@ -92,41 +95,83 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!fpl':
 			case '!info':
 			case '!fpl-c':
-				//client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-43`);
+			case '!fplc':
+				client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info`);
 				break;
 			case '!rank':
-			case '!fplc':
 			case '!leaderboard':
+				played = 0;
 				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
 					Faceitname = faceitUsername;
 				} else {
 					Faceitname = commandMessage.split(" ")[1];
-				}					
+				}
 				getFaceit(0,50, channel, User, Faceitname);
 				getFaceit(50,50, channel, User, Faceitname);
 				getFaceit(100,50, channel, User, Faceitname);
+				sleep(5000).then(() => { if(played == 0)client.action(channel, `${Faceitname} didn't played a game yet`); }); 
 				break;
 			case '!stats':
-				getStats(channel, User, faceitid);
+				getStats20(channel, User, faceitid);
 				break;
+			case '!fplcstats':
+				inList = 0;
+				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
+					Faceitname = faceitUsername;
+				} else {
+					Faceitname = commandMessage.split(" ")[1];
+				}	
+				getStats(0,100, channel, User, Faceitname);
+				getStats(100,100, channel, User, Faceitname);
+				getStats(200,100, channel, User, Faceitname);
+				getStats(300,100, channel, User, Faceitname);
+				getStats(400,100, channel, User, Faceitname);
+				getStats(500,100, channel, User, Faceitname);
+				break;
+
 			case '!last':
 				getlast(channel, User, faceitid, faceitUsername);
 				break;
 			case '!cmd':
 			case '!command':
 			case '!commands':
-				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !fplc !rank !stats !last !feedback`);
+				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !rank !stats !fplcstats !last !newmonth !feedback`);
 				break;
 			default:
-			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
-				getFaceit(0,50, channel, userstate["display-name"]);
-				getFaceit(51,100, channel, userstate["display-name"]);
-			  }*/
+			  	break;
 		}
 	}  
 });
 
-async function getStats(chan, user, idStats) {
+
+
+
+async function getStats(x, y, chan, user, name) {
+    await axios.get('https://open.faceit.com/data/v4/hubs/' + config.HubId + '/stats?offset=' + x + '&limit=' + y, {
+        headers: {
+            'Authorization': 'Bearer ' + config.faceittoken
+		}
+	})
+	.then(response => {
+		if (response.status !== 200) {
+			isNull = true;
+		} else {
+			response.data.players.forEach((player, index) => {
+				if (player.nickname == name)
+				{
+					inList = 1;
+					client.action(chan, `Here are the FPLC stats from ${name}: Avg. Kills: ${player.stats["Average Kills"]} - Avg. HS%: ${player.stats["Average Headshots %"]}% - Avg. K/D: ${player.stats["Average K/D Ratio"]} - Win Rate: ${player.stats["Win Rate %"]}`);
+				}
+			})
+		}
+	})
+	.catch(function (error) {});
+}
+
+
+
+
+async function getStats20(chan, user, idStats) {
   await axios
     .get(
       "https://api.faceit.com/stats/v1/stats/time/users/" + idStats + "/games/csgo",
@@ -139,7 +184,7 @@ async function getStats(chan, user, idStats) {
         var test = response.data;
         if (test.length == 0)
 			    return;
-        
+
         if (test.length <=20){
           length = test.length;
         }
@@ -159,7 +204,7 @@ async function getStats(chan, user, idStats) {
         avgHs = Math.round(HS / divid / 100);
         avgKD = (KD / divid / 100).toFixed(2);
         avgKR = (KR / divid / 100).toFixed(2);
-      
+
         client.action(
           chan,
           `Here are the stats of the last ${divid} matches: Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
@@ -197,15 +242,17 @@ async function getFaceit(x, y, chan, user, name) {
 			isNull = true;
 		} else {
 			if(response.data.leaderboard.status == 'UPCOMING'){
+				played = 2;
 				client.action(chan, `There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
 			}else{
 				response.data.items.forEach((player, index) => {
 					if (player.player.nickname == name)
 					{
+						played = 1;
 						if (index <= 1){
-							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points over the 3. place: ${player.points - response.data.items[2].points} | Leaderboard: http://bit.ly/FPL-C-43`);
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points over the 3. place: ${player.points - response.data.items[2].points}`);
 						} else {
-							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points needed for 2. place: ${response.data.items[1].points - player.points} | Leaderboard: http://bit.ly/FPL-C-43`);
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points needed for 2. place: ${response.data.items[1].points - player.points}`);
 						}
 					}
 				})
