@@ -109,7 +109,7 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				getFaceit(0,50, channel, User, Faceitname);
 				getFaceit(50,50, channel, User, Faceitname);
 				getFaceit(100,50, channel, User, Faceitname);
-				sleep(5000).then(() => { if(played == 0)client.action(channel, `${Faceitname} didn't played a game yet`); }); 
+				sleep(5000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not played a game yet`); }); 
 				break;
 			case '!stats':
 				getStats20(channel, User, faceitid);
