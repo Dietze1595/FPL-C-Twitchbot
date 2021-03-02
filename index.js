@@ -29,15 +29,15 @@ client.on("connected", (address, port) => {
 
   console.log(`Connected to ${address}:${port}`);
   config.channel.forEach((streamer, index) => {
-	  client.action(streamer, `Bot successfully added. Please use !commands`);
+	  //client.action(streamer, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername[index]} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
 	})
 });
-
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const talkedRecently = new Set();
 
 const getMonthsPassed = () => {
     const startDate = new Date(2017, 06, 01); // month start at 0
@@ -79,14 +79,23 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 		}); 
 		if(commandMessage.split(" ")[1] != undefined && commandMessage.split(" ")[1].includes("@")) User = commandMessage.split(" ")[1].replace('@','');
 
-		switch(commandMessage.split(" ")[0]){
+		if (talkedRecently.has(commandMessage)) {
+				client.action(channel, `Command in cooldown`); 
+		}else {
+			talkedRecently.add(commandMessage);
+			setTimeout(() => {
+			  // Removes the user from the set after a minute
+			  talkedRecently.delete(commandMessage);
+			}, config.cooldown);
+			
+			switch(commandMessage.split(" ")[0]){
 			case '!newmonth':
-				if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')){
+				if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')  || userstate["display-name"] == "Dietze_"){
 					getMonthsPassed();
-					client.action(channel, `Neuer Monat in der FPL-C Season. Season: ${getMonthsPassed("monthDifference")}`);
+					client.action(channel, `New month in FPLC. Season: ${getMonthsPassed("monthDifference")}`);
 					getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
 				}else{
-					client.action(channel, `@` + User + ` You are not a mod`);
+					client.action(channel, `@` + User + ` Mod only command`);
 				}
 				break;
 			case '!feedback':
@@ -95,10 +104,10 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!fpl':
 			case '!info':
 			case '!fpl-c':
-			case '!fplc':
-				client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info`);
+				//client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-43`);
 				break;
 			case '!rank':
+			case '!fplc':
 			case '!leaderboard':
 				played = 0;
 				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
@@ -109,7 +118,7 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				getFaceit(0,50, channel, User, Faceitname);
 				getFaceit(50,50, channel, User, Faceitname);
 				getFaceit(100,50, channel, User, Faceitname);
-				sleep(5000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not played a game yet`); }); 
+				sleep(4000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not played a game yet`); }); 
 				break;
 			case '!stats':
 				getStats20(channel, User, faceitid);
@@ -127,18 +136,24 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				getStats(300,100, channel, User, Faceitname);
 				getStats(400,100, channel, User, Faceitname);
 				getStats(500,100, channel, User, Faceitname);
+				getStats(600,100, channel, User, Faceitname);
+				sleep(6000).then(() => { if(inList == 0)client.action(channel, `${Faceitname} has not played a game in FPLC`); }); 
 				break;
-
 			case '!last':
 				getlast(channel, User, faceitid, faceitUsername);
 				break;
 			case '!cmd':
 			case '!command':
 			case '!commands':
-				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !rank !stats !fplcstats !last !newmonth !feedback`);
+				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !rank <name> !stats <name> !fplcstats !last !newmonth !feedback`);
 				break;
 			default:
-			  	break;
+				  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
+					getFaceit(0,50, channel, userstate["display-name"]);
+					getFaceit(51,100, channel, userstate["display-name"]);
+				  }*/
+			}
+		
 		}
 	}  
 });
