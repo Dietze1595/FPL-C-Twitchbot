@@ -20,6 +20,11 @@
   "license": "MIT",
   "keywords": [
     "node",
-    "twitch.tv"
+    "twitch.tv",
+    "fpl",
+    "fplc",
+    "csgo",
+    "faceit",
+    "league"
   ]
 }
