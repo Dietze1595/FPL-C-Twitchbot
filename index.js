@@ -4,7 +4,7 @@ const fs = require("fs");
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-var Players, lastmatchid, played, inList;
+var Players, lastmatchid, played, inList, secondplayer, secondelo;
 
 let client = new tmi.Client({
     identity: {
@@ -261,13 +261,19 @@ async function getFaceit(x, y, chan, user, name) {
 				client.action(chan, `There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
 			}else{
 				response.data.items.forEach((player, index) => {
+					if (player.position == 2)
+					{
+						secondplayer = player.player.nickname;
+						secondelo = player.points;
+					}
+					
 					if (player.player.nickname == name)
 					{
 						played = 1;
-						if (index <= 1){
-							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points over the 3. place: ${player.points - response.data.items[2].points}`);
+						if (player.position <= 2){
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points over the 3. place [${response.data.items[2].player.nickname}]: ${player.points - response.data.items[2].points}`);
 						} else {
-							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points needed for 2. place: ${response.data.items[1].points - player.points}`);
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points needed for 2. place [${secondplayer}]: ${secondelo - player.points}`);
 						}
 					}
 				})
