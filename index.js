@@ -1,10 +1,11 @@
 const tmi = require("tmi.js");
 var axios = require('axios');
 const fs = require("fs"); 
+const { Console } = require("console");
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-var Players, lastmatchid, played, inList, secondplayer, secondelo;
+var Players, lastmatchid, played, inList, secondplayer, secondelo, Identifikation;
 
 let client = new tmi.Client({
     identity: {
@@ -74,20 +75,18 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 		config.channel.forEach((streamer, index) => {
 			if(channel == streamer){
 				faceitUsername = config.faceitUsername[index];
-				faceitid = config.faceitid[index];
 			}
 		}); 
+		
 		if(commandMessage.split(" ")[1] != undefined && commandMessage.split(" ")[1].includes("@")) User = commandMessage.split(" ")[1].replace('@','');
-
 		if (talkedRecently.has(commandMessage)) {
-				client.action(channel, `Command in cooldown`); 
+				//client.action(channel, `Command in cooldown`); 
 		}else {
 			talkedRecently.add(commandMessage);
 			setTimeout(() => {
 			  // Removes the user from the set after a minute
 			  talkedRecently.delete(commandMessage);
 			}, config.cooldown);
-			
 			switch(commandMessage.split(" ")[0]){
 			case '!newmonth':
 				if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')  || userstate["display-name"] == "Dietze_"){
@@ -104,7 +103,7 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			case '!fpl':
 			case '!info':
 			case '!fpl-c':
-				//client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-43`);
+				client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-51`);
 				break;
 			case '!rank':
 			case '!fplc':
@@ -121,7 +120,13 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				sleep(4000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not played a game yet`); }); 
 				break;
 			case '!stats':
-				getStats20(channel, User, faceitid);
+				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
+					Faceitname = faceitUsername;
+				} else {
+					Faceitname = commandMessage.split(" ")[1];
+				}	
+
+				getFaceitId(channel, User, Faceitname, "stats");
 				break;
 			case '!fplcstats':
 				inList = 0;
@@ -130,22 +135,25 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				} else {
 					Faceitname = commandMessage.split(" ")[1];
 				}	
-				getStats(0,100, channel, User, Faceitname);
-				getStats(100,100, channel, User, Faceitname);
-				getStats(200,100, channel, User, Faceitname);
-				getStats(300,100, channel, User, Faceitname);
-				getStats(400,100, channel, User, Faceitname);
-				getStats(500,100, channel, User, Faceitname);
-				getStats(600,100, channel, User, Faceitname);
+
+				for(i = 0; i <= 1000; i += 100){					
+					getStats(i,100, channel, User, Faceitname);
+				}
 				sleep(6000).then(() => { if(inList == 0)client.action(channel, `${Faceitname} has not played a game in FPLC`); }); 
 				break;
 			case '!last':
-				getlast(channel, User, faceitid, faceitUsername);
+				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
+					Faceitname = faceitUsername;
+				} else {
+					Faceitname = commandMessage.split(" ")[1];
+				}	
+
+				getFaceitId(channel, User, Faceitname, "last");
 				break;
 			case '!cmd':
 			case '!command':
 			case '!commands':
-				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !rank <name> !stats <name> !fplcstats !last !newmonth !feedback`);
+				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !rank <name> !stats <name> !fplcstats <name> !last <name> !feedback`);
 				break;
 			default:
 				  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
@@ -186,7 +194,7 @@ async function getStats(x, y, chan, user, name) {
 
 
 
-async function getStats20(chan, user, idStats) {
+async function getStats20(chan, user, idStats, name20) {
   await axios
     .get(
       "https://api.faceit.com/stats/v1/stats/time/users/" + idStats + "/games/csgo",
@@ -222,11 +230,36 @@ async function getStats20(chan, user, idStats) {
 
         client.action(
           chan,
-          `Here are the stats of the last ${divid} matches: Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
+          `Here are the stats of the last ${divid} matches [${name20}]: Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
       }
     })
     .catch(function(error) {});
 }
+
+
+
+async function getFaceitId(chan, user, userLast, Command) {
+    await axios.get('https://open.faceit.com/data/v4/players?nickname=' + userLast, {
+        headers: {
+            'Authorization': 'Bearer ' + config.faceittoken
+		}
+	})
+	.then(response => {
+		if (response.status !== 200) {
+			isNull = true;
+		} else {
+			Identifikation = response.data.player_id;	
+			
+			if(Command == "last"){
+				getlast(chan, user, Identifikation, userLast);
+			}else if(Command == "stats"){			
+				getStats20(chan, user, Identifikation, userLast);
+			}
+		}
+	})
+	.catch(function (error) {console.log(error)});
+}
+
 
 
 async function getlast(chan, user, idLast, userLast) {
