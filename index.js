@@ -5,7 +5,7 @@ const { Console } = require("console");
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-var Players, lastmatchid, played, inList, secondplayer, secondelo, Identifikation;
+var Players, lastmatchid, played, inList, secondplayer, secondelo, Identifikation, faceitlvl, faceitelo;
 
 let client = new tmi.Client({
     identity: {
@@ -68,6 +68,65 @@ async function getLeaderboardId(Hub, Season) {
 
 
 
+
+async function trySwitch(channel, userstate, User, Faceitname, status) {
+    switch(status) {
+		case '!newmonth':
+			if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')  || userstate["display-name"] == "Dietze_"){
+				getMonthsPassed();
+				client.action(channel, `New month in FPLC. Season: ${getMonthsPassed("monthDifference")}`);
+				getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
+			}else{
+				client.action(channel, `@` + User + ` Mod only command`);
+			}
+			break;
+		case '!feedback':
+			client.action(channel, `@` + User + ` If you have any suggestions or bug reports - please send me a Steammessage: http://steamcommunity.com/id/Dietze_`);
+			break;
+		case '!fpl':
+		case '!info':
+		case '!fpl-c':
+			client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-51`);
+			break;
+		case '!rank':
+		case '!fplc':
+		case '!leaderboard':
+			played = 0;
+			for(i = 0; i <= 150; i += 50){				
+				await getFaceit(i, 50, channel, User, Faceitname);
+			}
+			sleep(4000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not played a game yet`); }); 
+			break;
+		case '!stats':
+			getFaceitId(channel, User, Faceitname, "stats");
+			break;
+		case '!fplcstats':
+			inList = 0;
+			for(i = 0; i <= 1000; i += 100){					
+				getStats(i,100, channel, User, Faceitname);
+			}
+			sleep(6000).then(() => { if(inList == 0)client.action(channel, `${Faceitname} has not played a game in FPLC`); }); 
+			break;
+		case '!last':
+			getFaceitId(channel, User, Faceitname, "last");
+			break;
+		case '!cmd':
+		case '!command':
+		case '!commands':
+			client.action(channel, `@` + User + ` you can use the following Faceit commands: !stats <name> !last <name> || FPL-C Commands: !rank <name> !fplcstats <name> !feedback`);
+			break;
+		default:
+			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
+				getFaceit(0,50, channel, userstate["display-name"]);
+				getFaceit(51,100, channel, userstate["display-name"]);
+			  }*/
+		}
+}
+
+
+
+
+
 client.on("chat", (channel, userstate, commandMessage, self) => {
 	if(userstate["display-name"] != config.username){
 		User = userstate["display-name"]
@@ -87,80 +146,14 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			  // Removes the user from the set after a minute
 			  talkedRecently.delete(commandMessage);
 			}, config.cooldown);
-			switch(commandMessage.split(" ")[0]){
-			case '!newmonth':
-				if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')  || userstate["display-name"] == "Dietze_"){
-					getMonthsPassed();
-					client.action(channel, `New month in FPLC. Season: ${getMonthsPassed("monthDifference")}`);
-					getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
-				}else{
-					client.action(channel, `@` + User + ` Mod only command`);
-				}
-				break;
-			case '!feedback':
-				client.action(channel, `@` + User + ` If you have any suggestions or bug reports - please send me a Steammessage: http://steamcommunity.com/id/Dietze_`);
-				break;
-			case '!fpl':
-			case '!info':
-			case '!fpl-c':
-				client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-51`);
-				break;
-			case '!rank':
-			case '!fplc':
-			case '!leaderboard':
-				played = 0;
-				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
-					Faceitname = faceitUsername;
-				} else {
-					Faceitname = commandMessage.split(" ")[1];
-				}
-				getFaceit(0,50, channel, User, Faceitname);
-				getFaceit(50,50, channel, User, Faceitname);
-				getFaceit(100,50, channel, User, Faceitname);
-				sleep(4000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not played a game yet`); }); 
-				break;
-			case '!stats':
-				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
-					Faceitname = faceitUsername;
-				} else {
-					Faceitname = commandMessage.split(" ")[1];
-				}	
 
-				getFaceitId(channel, User, Faceitname, "stats");
-				break;
-			case '!fplcstats':
-				inList = 0;
-				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
-					Faceitname = faceitUsername;
-				} else {
-					Faceitname = commandMessage.split(" ")[1];
-				}	
-
-				for(i = 0; i <= 1000; i += 100){					
-					getStats(i,100, channel, User, Faceitname);
-				}
-				sleep(6000).then(() => { if(inList == 0)client.action(channel, `${Faceitname} has not played a game in FPLC`); }); 
-				break;
-			case '!last':
-				if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
-					Faceitname = faceitUsername;
-				} else {
-					Faceitname = commandMessage.split(" ")[1];
-				}	
-
-				getFaceitId(channel, User, Faceitname, "last");
-				break;
-			case '!cmd':
-			case '!command':
-			case '!commands':
-				client.action(channel, `@` + User + ` you can use the following Faceit FPL-C commands: !rank <name> !stats <name> !fplcstats <name> !last <name> !feedback`);
-				break;
-			default:
-				  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
-					getFaceit(0,50, channel, userstate["display-name"]);
-					getFaceit(51,100, channel, userstate["display-name"]);
-				  }*/
-			}
+			if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
+				Faceitname = faceitUsername;
+			} else {
+				Faceitname = commandMessage.split(" ")[1];
+			}	
+			trySwitch(channel, userstate, User, Faceitname, commandMessage.split(" ")[0])
+			
 		
 		}
 	}  
@@ -230,7 +223,7 @@ async function getStats20(chan, user, idStats, name20) {
 
         client.action(
           chan,
-          `Here are the stats of the last ${divid} matches [${name20}]: Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
+          `Here are the stats of the last ${divid} matches [${name20}]: Level: ${faceitlvl} - Elo: ${faceitelo} - Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
       }
     })
     .catch(function(error) {});
@@ -248,8 +241,9 @@ async function getFaceitId(chan, user, userLast, Command) {
 		if (response.status !== 200) {
 			isNull = true;
 		} else {
-			Identifikation = response.data.player_id;	
-			
+			Identifikation = response.data.player_id;
+			faceitlvl = response.data.games.csgo.skill_level;
+			faceitelo = response.data.games.csgo.faceit_elo;
 			if(Command == "last"){
 				getlast(chan, user, Identifikation, userLast);
 			}else if(Command == "stats"){			
@@ -306,7 +300,7 @@ async function getFaceit(x, y, chan, user, name) {
 						if (player.position <= 2){
 							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points over the 3. place [${response.data.items[2].player.nickname}]: ${player.points - response.data.items[2].points}`);
 						} else {
-							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points needed for 2. place [${secondplayer}]: ${secondelo - player.points}`);
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points needed for 2. place [${secondplayer}]: ${secondelo - player.points + 1}`);
 						}
 					}
 				})
