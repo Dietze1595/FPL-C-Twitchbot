@@ -74,7 +74,7 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 		case '!newmonth':
 			if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')  || userstate["display-name"] == "Dietze_"){
 				getMonthsPassed();
-				client.action(channel, `New month in FPLC. Season: ${getMonthsPassed("monthDifference")}`);
+				client.action(channel, `New FPL-C. Season: ${getMonthsPassed("monthDifference")}`);
 				getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
 			}else{
 				client.action(channel, `@` + User + ` Mod only command`);
