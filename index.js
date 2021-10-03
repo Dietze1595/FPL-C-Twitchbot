@@ -98,7 +98,8 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 			sleep(4000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not yet played a game in the FPLC.`); }); 
 			break;
 		case '!stats':
-			getFaceitId(channel, User, Faceitname, "stats");
+			await getFaceitId(Faceitname);
+			await getStats20(channel, User, Identifikation, Faceitname);
 			break;
 		case '!fplcstats':
 			inList = 0;
@@ -108,7 +109,8 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 			sleep(6000).then(() => { if(inList == 0)client.action(channel, `${Faceitname} has not yet played a game in the FPLC.`); }); 
 			break;
 		case '!last':
-			getFaceitId(channel, User, Faceitname, "last");
+			await getFaceitId(Faceitname);
+			await getlast(channel, User, Identifikation, Faceitname);
 			break;
 		case '!cmd':
 		case '!command':
@@ -153,8 +155,6 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 				Faceitname = commandMessage.split(" ")[1];
 			}	
 			trySwitch(channel, userstate, User, Faceitname, commandMessage.split(" ")[0])
-			
-		
 		}
 	}  
 });
@@ -195,7 +195,7 @@ async function getStats20(chan, user, idStats, name20) {
     .then(response => {
       if (response.status !== 200) {
         var isNull = true;
-      } else {  
+      } else { 
         length = 20;
         var test = response.data;
         if (test.length == 0)
@@ -231,7 +231,7 @@ async function getStats20(chan, user, idStats, name20) {
 
 
 
-async function getFaceitId(chan, user, userLast, Command) {
+async function getFaceitId(userLast) {
     await axios.get('https://open.faceit.com/data/v4/players?nickname=' + userLast, {
         headers: {
             'Authorization': 'Bearer ' + config.faceittoken
@@ -244,11 +244,6 @@ async function getFaceitId(chan, user, userLast, Command) {
 			Identifikation = response.data.player_id;
 			faceitlvl = response.data.games.csgo.skill_level;
 			faceitelo = response.data.games.csgo.faceit_elo;
-			if(Command == "last"){
-				getlast(chan, user, Identifikation, userLast);
-			}else if(Command == "stats"){			
-				getStats20(chan, user, Identifikation, userLast);
-			}
 		}
 	})
 	.catch(function (error) {
