@@ -86,7 +86,7 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 		case '!fpl':
 		case '!info':
 		case '!fpl-c':
-			client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLC-Info | Leaderboard: http://bit.ly/FPL-C-51`);
+			client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPL Circuit | Leaderboard: http://bit.ly/FPL-C-51`);
 			break;
 		case '!rank':
 		case '!fplc':
@@ -95,7 +95,7 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 			for(i = 0; i <= 150; i += 50){				
 				await getFaceit(i, 50, channel, User, Faceitname);
 			}
-			sleep(4000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not played a game yet`); }); 
+			sleep(4000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not yet played a game in the FPLC.`); }); 
 			break;
 		case '!stats':
 			getFaceitId(channel, User, Faceitname, "stats");
@@ -105,7 +105,7 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 			for(i = 0; i <= 1000; i += 100){					
 				getStats(i,100, channel, User, Faceitname);
 			}
-			sleep(6000).then(() => { if(inList == 0)client.action(channel, `${Faceitname} has not played a game in FPLC`); }); 
+			sleep(6000).then(() => { if(inList == 0)client.action(channel, `${Faceitname} has not yet played a game in the FPLC.`); }); 
 			break;
 		case '!last':
 			getFaceitId(channel, User, Faceitname, "last");
@@ -251,7 +251,9 @@ async function getFaceitId(chan, user, userLast, Command) {
 			}
 		}
 	})
-	.catch(function (error) {console.log(error)});
+	.catch(function (error) {
+		client.action(chan, `@` + user + `, I couldn't find a faceitname with ${userLast}`);
+	});
 }
 
 
