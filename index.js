@@ -5,7 +5,7 @@ const { Console } = require("console");
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-var Players, lastmatchid, played, inList, secondplayer, secondelo, Identifikation, faceitlvl, faceitelo;
+var Players, lastmatchid, played, inList, secondplayer, secondelo, Identifikation, faceitlvl, faceitelo, month;
 
 let client = new tmi.Client({
     identity: {
@@ -25,8 +25,8 @@ let client = new tmi.Client({
 client.connect();
 
 client.on("connected", (address, port) => {
-  getMonthsPassed();
-  getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
+  month = getMonthsPassed();
+  getLeaderboardId(config.HubId, month)
 
   console.log(`Connected to ${address}:${port}`);
   config.channel.forEach((streamer, index) => {
@@ -73,9 +73,9 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
     switch(status) {
 		case '!newmonth':
 			if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')  || userstate["display-name"] == "Dietze_"){
-				getMonthsPassed();
-				client.action(channel, `New FPL-C. Season: ${getMonthsPassed("monthDifference")}`);
-				getLeaderboardId(config.HubId, getMonthsPassed("monthDifference"))
+				month = getMonthsPassed();
+				client.action(channel, `New FPL-C. Season: ${month}`);
+				getLeaderboardId(config.HubId, month)
 			}else{
 				client.action(channel, `@` + User + ` Mod only command`);
 			}
@@ -86,7 +86,7 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 		case '!fpl':
 		case '!info':
 		case '!fpl-c':
-			client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLCircuit | Leaderboard: http://bit.ly/FPL-C-51`);
+			client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLCircuit | Leaderboard: http://bit.ly/FPL-C-${month}`);
 			break;
 		case '!rank':
 		case '!fplc':
