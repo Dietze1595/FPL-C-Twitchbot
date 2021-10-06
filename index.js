@@ -86,7 +86,7 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 		case '!fpl':
 		case '!info':
 		case '!fpl-c':
-			client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPL Circuit | Leaderboard: http://bit.ly/FPL-C-51`);
+			client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLCircuit | Leaderboard: http://bit.ly/FPL-C-51`);
 			break;
 		case '!rank':
 		case '!fplc':
