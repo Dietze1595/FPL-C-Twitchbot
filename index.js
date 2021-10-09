@@ -83,6 +83,10 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 		case '!feedback':
 			client.action(channel, `@` + User + ` If you have any suggestions or bug reports - please send me a Steammessage: http://steamcommunity.com/id/Dietze_`);
 			break;
+		case '!live':
+			await getFaceitId(Faceitname);
+			await getLiveMatch(channel, Faceitname, Identifikation);
+			break;
 		case '!fpl':
 		case '!info':
 		case '!fpl-c':
@@ -160,6 +164,85 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 });
 
 
+function checkForValue(e, a) {
+    for (let t = 0; t < e.roster.length; t++) if (e.roster[t].id === a) return !0;
+    return !1;
+}
+
+function calculateRatingChange(e, a) {
+    var t, r;
+    return (r = a - e), (t = 1 / (1 + Math.pow(10, r / 400))), Math.round(50 * (1 - t));
+}
+
+async function getEloFromPlayer(e) {
+	var isNull = 0;
+	  await axios
+		  .get("https://open.faceit.com/data/v4/players/" + e, { headers: { Authorization: "Bearer " + config.faceittoken } })
+		  .then((e) => {
+			  200 !== e.status
+				  ? (isNull = !0)
+				  : (playerTempElo = e.data.games.csgo.faceit_elo);
+		  })
+		  .catch(function (e) {}); 
+  }
+
+
+async function getLiveMatch(chanLive, userLive, idLive) {
+	await axios
+	  .get(
+		"https://api.faceit.com/match/v1/matches/groupByState?userId=" + idLive,
+	  )
+	  .then(async response => {
+		if (response.status !== 200) {
+		  var isNull = true;
+		} else {  
+		  var length = 20;
+		  var test = response.data;
+		  if (Object.keys(test.payload).length == 0) {
+			client.action(chanLive, `${Faceitname} is currently not playing a faceitmatch`);
+			return;
+		  }		  
+		let names = Object.getOwnPropertyNames(test.payload)
+		var r = test.payload[names[0]][0];
+		var ownFactionNumber = checkForValue(r.teams.faction1, idLive) ? 1 : 2;
+		console.log(ownFactionNumber);
+		var enemyFactionNumber = 1 == ownFactionNumber ? 2 : 1
+		  
+		var teamname1 = r.teams["faction" + ownFactionNumber].name;
+		var teamname2 = r.teams["faction" + enemyFactionNumber].name;
+
+		lastteamID = teamname1 
+			
+		var playerOwnElo = 0;
+		var playerEnemyElo = 0;
+		var ownTeamAVGElo = 0;
+		var enemyTeamAVGElo = 0;
+		var winElo = 0;
+		var lossElo = 0;
+		  
+		  
+		  for (let e = 0; e < r.teams["faction" + ownFactionNumber].roster.length; e++){
+			await getEloFromPlayer(r.teams["faction" + ownFactionNumber].roster[e].id);
+			playerOwnElo += playerTempElo;
+		  }
+		  
+		  for (let e = 0; e < r.teams["faction" + enemyFactionNumber].roster.length; e++) {
+			await getEloFromPlayer(r.teams["faction" + enemyFactionNumber].roster[e].id), 
+			playerEnemyElo += playerTempElo;
+		  }
+				  
+		  ownTeamAVGElo = Math.floor(playerOwnElo / r.teams["faction" + ownFactionNumber].roster.length);
+		  enemyTeamAVGElo = Math.floor(playerEnemyElo / r.teams["faction" + enemyFactionNumber].roster.length);
+		  winElo = calculateRatingChange(ownTeamAVGElo, enemyTeamAVGElo);
+		  lossElo = 50 - winElo;
+		  
+		  var link = "https://www.faceit.com/de/csgo/room/" + test.payload[names[0]][0].id;
+				  
+		  client.action(chanLive, `Inspected user: ${userLive} | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo}`);
+		}
+	  })
+	  .catch(function(error) {console.log(error)});
+  }
 
 
 async function getStats(x, y, chan, user, name) {
