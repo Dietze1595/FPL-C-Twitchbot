@@ -119,7 +119,7 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 		case '!cmd':
 		case '!command':
 		case '!commands':
-			client.action(channel, `@` + User + ` you can use the following Faceit commands: !stats <name> !last <name> || FPL-C Commands: !rank <name> !fplcstats <name> !feedback`);
+			client.action(channel, `@` + User + ` you can use the following Faceit commands: !stats <name> !last <name> !live <name> || FPL-C Commands: !rank <name> !fplcstats <name> !feedback`);
 			break;
 		default:
 			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
