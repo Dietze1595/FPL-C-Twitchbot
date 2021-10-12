@@ -211,6 +211,12 @@ async function getLiveMatch(chanLive, userLive, idLive) {
 		var teamname1 = r.teams["faction" + ownFactionNumber].name;
 		var teamname2 = r.teams["faction" + enemyFactionNumber].name;
 
+		var link = "https://www.faceit.com/de/csgo/room/" + test.payload[names[0]][0].id;
+		if(r.entity.id == config.HubId){
+ 		    client.action(chanLive, `Inspected user: ${userLive} | FPL-C game ${teamname1} vs ${teamname2} | ROOM: ${link}`);
+		    return;
+		}
+			
 		lastteamID = teamname1 
 			
 		var playerOwnElo = 0;
@@ -235,14 +241,9 @@ async function getLiveMatch(chanLive, userLive, idLive) {
 		  enemyTeamAVGElo = Math.floor(playerEnemyElo / r.teams["faction" + enemyFactionNumber].roster.length);
 		  winElo = calculateRatingChange(ownTeamAVGElo, enemyTeamAVGElo);
 		  lossElo = 50 - winElo;
-		  
-		  var link = "https://www.faceit.com/de/csgo/room/" + test.payload[names[0]][0].id;
 			
-		  if(r.entity.id == config.HubId){
- 		    client.action(chanLive, `Inspected user: ${userLive} | FPL-C game ${teamname1} vs ${teamname2} | ROOM: ${link}`);
-		  }else{	
-		    client.action(chanLive, `Inspected user: ${userLive} | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo} | ROOM: ${link}`);
-		  }
+		  client.action(chanLive, `Inspected user: ${userLive} | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo} | ROOM: ${link}`);
+
 		}
 	  })
 	  .catch(function(error) {console.log(error)});
