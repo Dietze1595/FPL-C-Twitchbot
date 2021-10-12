@@ -237,8 +237,12 @@ async function getLiveMatch(chanLive, userLive, idLive) {
 		  lossElo = 50 - winElo;
 		  
 		  var link = "https://www.faceit.com/de/csgo/room/" + test.payload[names[0]][0].id;
-				  
-		  client.action(chanLive, `Inspected user: ${userLive} | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo}`);
+			
+		  if(r.entity.id == config.HubId){
+ 		    client.action(chanLive, `Inspected user: ${userLive} | FPL-C game ${teamname1} vs ${teamname2} | ROOM: ${link}`);
+		  }else{	
+		    client.action(chanLive, `Inspected user: ${userLive} | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo} | ROOM: ${link}`);
+		  }
 		}
 	  })
 	  .catch(function(error) {console.log(error)});
