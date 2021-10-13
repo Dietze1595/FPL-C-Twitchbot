@@ -5,7 +5,7 @@ const { Console } = require("console");
 
 const config = JSON.parse(fs.readFileSync("cfg.json"));
 
-var Players, lastmatchid, played, inList, secondplayer, secondelo, Identifikation, faceitlvl, faceitelo, month;
+var Players, lastmatchid, played, inList, secondplayer, secondelo, Identifikation, faceitlvl, faceitelo, month, roomId;
 
 let client = new tmi.Client({
     identity: {
@@ -86,6 +86,9 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 		case '!live':
 			await getFaceitId(Faceitname);
 			await getLiveMatch(channel, Faceitname, Identifikation);
+			if(roomId != null){
+				await getLiveStats(channel, Faceitname, roomId);
+			}
 			break;
 		case '!fpl':
 		case '!info':
@@ -165,30 +168,18 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 
 
 function checkForValue(e, a) {
-    for (let t = 0; t < e.roster.length; t++) if (e.roster[t].id === a) return !0;
-    return !1;
+    for (let t = 0; t < e.roster.length; t++){
+		if (e.roster[t].nickname === a){
+			return true;
+		}
+    }
+    return false;
 }
 
 function calculateRatingChange(e, a) {
-    var eloDiff = a - e
-    var percentage = 1 / (1 + Math.pow(10, eloDiff / 400))
-
-    var gain = Math.round(50 * (1 - percentage))
+    var gain = Math.round(a - e * a)
     return gain;
 }
-
-async function getEloFromPlayer(e) {
-	var isNull = 0;
-	  await axios
-		  .get("https://open.faceit.com/data/v4/players/" + e, { headers: { Authorization: "Bearer " + config.faceittoken } })
-		  .then((e) => {
-			  200 !== e.status
-				  ? (isNull = !0)
-				  : (playerTempElo = e.data.games.csgo.faceit_elo);
-		  })
-		  .catch(function (e) {}); 
-  }
-
 
 async function getLiveMatch(chanLive, userLive, idLive) {
 	await axios
@@ -203,49 +194,58 @@ async function getLiveMatch(chanLive, userLive, idLive) {
 		  var test = response.data;
 		  if (Object.keys(test.payload).length == 0) {
 			client.action(chanLive, `${Faceitname} is currently not playing a faceitmatch`);
+			roomId = null;
 			return;
-		  }		  
+		  }		
+		  
 		let names = Object.getOwnPropertyNames(test.payload)
-		var r = test.payload[names[0]][0];
-		var ownFactionNumber = checkForValue(r.teams.faction1, idLive) ? 1 : 2;
-		console.log(ownFactionNumber);
-		var enemyFactionNumber = 1 == ownFactionNumber ? 2 : 1
-		  
-		var teamname1 = r.teams["faction" + ownFactionNumber].name;
-		var teamname2 = r.teams["faction" + enemyFactionNumber].name;
-
-		var link = "https://www.faceit.com/de/csgo/room/" + test.payload[names[0]][0].id;
-		if(r.entity.id == config.HubId){
- 		    client.action(chanLive, `Inspected user: ${userLive} | FPL-C game ${teamname1} vs ${teamname2} | ROOM: ${link}`);
-		    return;
+		roomId = response.data.payload[names[0]][0].id;  
 		}
+	  })
+	  .catch(function(error) {console.log(error)});
+  }
+
+
+  async function getLiveStats(chanLive, userLive, roomLive) {
+	await axios
+	  .get(
+		"https://api.faceit.com/match/v2/match/" + roomLive,
+	  )
+	  .then(async response => {
+		if (response.status !== 200) {
+		  var isNull = true;
+		} else {  
+			var test = response.data.payload;
+			var ownFactionNumber = checkForValue(test.teams.faction1, userLive) ? 1 : 2;
+			var enemyFactionNumber = 1 == ownFactionNumber ? 2 : 1;
+
+			var teamname1 = test.teams["faction" + ownFactionNumber].name;
+			var teamname2 = test.teams["faction" + enemyFactionNumber].name;
 			
-		lastteamID = teamname1 
-			
-		var playerOwnElo = 0;
-		var playerEnemyElo = 0;
-		var ownTeamAVGElo = 0;
-		var enemyTeamAVGElo = 0;
-		var winElo = 0;
-		var lossElo = 0;
-		  
-		  
-		  for (let e = 0; e < r.teams["faction" + ownFactionNumber].roster.length; e++){
-			await getEloFromPlayer(r.teams["faction" + ownFactionNumber].roster[e].id);
-			playerOwnElo += playerTempElo;
-		  }
-		  
-		  for (let e = 0; e < r.teams["faction" + enemyFactionNumber].roster.length; e++) {
-			await getEloFromPlayer(r.teams["faction" + enemyFactionNumber].roster[e].id), 
-			playerEnemyElo += playerTempElo;
-		  }
-				  
-		  ownTeamAVGElo = Math.floor(playerOwnElo / r.teams["faction" + ownFactionNumber].roster.length);
-		  enemyTeamAVGElo = Math.floor(playerEnemyElo / r.teams["faction" + enemyFactionNumber].roster.length);
-		  winElo = calculateRatingChange(ownTeamAVGElo, enemyTeamAVGElo);
-		  lossElo = 50 - winElo;
-			
-		  client.action(chanLive, `Inspected user: ${userLive} | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo} | ROOM: ${link}`);
+			var link = "https://www.faceit.com/de/csgo/room/" + roomLive;
+			if(test.entity.id == config.HubId){
+				client.action(chanLive, `Inspected user: ${userLive} | FPL-C game ${teamname1} vs ${teamname2} | ROOM: ${link}`);
+			   return;
+		   }
+
+		   var playerOwnElo = 0;
+		   var playerEnemyElo = 0
+
+			for (let e = 0; e < test.teams["faction" + ownFactionNumber].roster.length; e++){
+				playerOwnElo += test.teams["faction" + ownFactionNumber].roster[e].elo;
+			}
+
+			for (let e = 0; e < test.teams["faction" + enemyFactionNumber].roster.length; e++) {
+				playerEnemyElo += test.teams["faction" + enemyFactionNumber].roster[e].elo;
+			}
+
+			ownTeamAVGElo =  Math.floor(playerOwnElo / test.teams["faction" + ownFactionNumber].roster.length);		  
+			enemyTeamAVGElo = Math.floor(playerEnemyElo / test.teams["faction" + enemyFactionNumber].roster.length);
+
+			winElo = calculateRatingChange(test.teams["faction" + ownFactionNumber].stats.winProbability, 50);
+			lossElo = 50 - winElo;
+
+			client.action(chanLive, `Inspected user: ${userLive} | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo} | ROOM: ${link}`);
 
 		}
 	  })
