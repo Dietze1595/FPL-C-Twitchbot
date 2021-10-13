@@ -173,7 +173,7 @@ function calculateRatingChange(e, a) {
     var eloDiff = a - e
     var percentage = 1 / (1 + Math.pow(10, eloDiff / 400))
 
-    var gain = round(50 * (1 - percentage))
+    var gain = Math.round(50 * (1 - percentage))
     return gain;
 }
 
