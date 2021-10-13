@@ -170,8 +170,11 @@ function checkForValue(e, a) {
 }
 
 function calculateRatingChange(e, a) {
-    var t, r;
-    return (r = a - e), (t = 1 / (1 + Math.pow(10, r / 400))), Math.round(50 * (1 - t));
+    var eloDiff = a - e
+    var percentage = 1 / (1 + Math.pow(10, eloDiff / 400))
+
+    var gain = round(50 * (1 - percentage))
+    return gain;
 }
 
 async function getEloFromPlayer(e) {
