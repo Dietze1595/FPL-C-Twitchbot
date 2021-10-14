@@ -1,372 +1,171 @@
-const fs = require("fs");
-const config = JSON.parse(fs.readFileSync("config.json"));
+const tmi = require("tmi.js");
+var axios = require('axios');
+const fs = require("fs"); 
+const { Console } = require("console");
 
-var Bearertoken = config.FaceitToken;
-var requeststate,
-    express = require("express"),
-    app = express(),
-    http = require("http").createServer(app),
-    io = require("socket.io")(http),
-    bodyParser = require("body-parser"),
-    axios = require("axios"),
-    PlayerRoster = new Database(),
-    TeamDatabase = new Database(),
-    jsonParser = bodyParser.json(),
-    playerID = "",
-    gamename = "",
-    gamestate = 0,
-    NickPlayerId = "",
-    playerTempElo = 0,
-    ava = "",
-    fl = "",
-    faceitlvl = 0,
-    playerWins = 0,
-    playerPlayedGames = 0,
-    playerCurrentWinstreak = 0,
-    playerLongestWinstreak = 0,
-    player20Kills = 0,
-    player20HS = 0,
-    player20KD = 0,
-    player20KR = 0;
-    roomId = 0;
-app.use(express.static(__dirname + "/public")),
-    app.get("/", function (e, a) {
-        a.sendFile(__dirname + "/html/index.html");
-    }),
-    app.get("/169", function (e, a) {
-        a.sendFile(__dirname + "/html/169.html");
-    }),
-    app.get("/43", function (e, a) {
-        a.sendFile(__dirname + "/html/43.html");
-    }),
-    app.post("/", jsonParser, function (e, a) {
-        executeRequest(e, a).catch(function (e) {});
-    });
-class Request {
-    constructor(round, activity, bomb, mysteam, playersteam, e, a, t, r, l, s, n, i, o, y, m, p, c, d, h, u, g, f, w, v, A, E, k, K, S, T, F, R) {
-        (this.round = round),
-            (this.activity = activity),
-            (this.bomb = bomb),
-            (this.mysteam = mysteam),
-            (this.playersteam = playersteam),
-            (this.gamestate = e),
-            (this.requeststate = a),
-            (this.gamename = t),
-            (this.kills = r),
-            (this.assists = l),
-            (this.deaths = s),
-            (this.mvps = n),
-            (this.score = i),
-            (this.r_kills = o),
-            (this.name = y),
-            (this.avatar = m),
-            (this.flag = p),
-            (this.elo = c),
-            (this.faceitlevel = d),
-            (this.wins = h),
-            (this.playedGames = u),
-            (this.currentWinstreak = g),
-            (this.longestWinstreak = f),
-            (this.ownTeamname = w),
-            (this.enemyTeamname = v),
-            (this.ownTeamAVGElo = A),
-            (this.enemyTeamAVGElo = E),
-            (this.winElo = k),
-            (this.lossElo = K),
-            (this.player20Kills = S),
-            (this.player20HS = T),
-            (this.player20KD = F),
-            (this.player20KR = R);
+const config = JSON.parse(fs.readFileSync("cfg.json"));
+
+var Players, lastmatchid, played, inList, secondplayer, secondelo, Identifikation, faceitlvl, faceitelo, month, roomId;
+
+let client = new tmi.Client({
+    identity: {
+		username: config.username,
+		password: config.password
+    },
+	channels: config.channel,
+    options: {
+        debug: false
+    },
+    connection: {
+        reconnect: true,
+        secure: true
     }
+});
+
+client.connect();
+
+client.on("connected", (address, port) => {
+  month = getMonthsPassed();
+  getLeaderboardId(config.HubId, month)
+
+  console.log(`Connected to ${address}:${port}`);
+  config.channel.forEach((streamer, index) => {
+	  //client.action(streamer, `Hey, I'll be with you over the coming weekend and wish ${config.faceitUsername[index]} the best of luck at his qualifier. If you have any questions about his ranking, stats or infos of his last played match, you can use the following commands: !fplc !rank !stats !last`);
+	})
+});
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
-async function executeRequest(e, a) {
-    var t = await processPayload(e.body, a).catch(function (e) {});
-    "" !== JSON.stringify(t) && void 0 !== e.body.auth && void 0 !== e.body.auth.token && io.emit(e.body.auth.token, t), a.send("");
-}
-function send(e, a, t) {
-    "" !== JSON.stringify(e) && void 0 !== a.auth && void 0 !== a.auth.token && io.emit(a.auth.token, e), t.send("");
-}
-async function processPayload(e, a) {
-    if (((void 0 !== e.auth && void 0 !== e.auth.token) || returnEmpty(), void 0 === e.player.state)) {
-        for (i = 0; i < 5; i++) PlayerRoster.delete("mySteamId", e.provider.steamid), TeamDatabase.delete("mySteamId", e.provider.steamid);
-        returnEmpty();
-    } else {
-        var round = e.player.state.health;
-        var activity = e.player.activity;
-        var bomb = e.round.bomb;
-        var t = "";
-        gamestate = 1;
-        var r = e.player.match_stats.kills,
-            l = e.player.match_stats.assists,
-            s = e.player.match_stats.deaths,
-            n = e.player.match_stats.mvps,
-            o = e.player.match_stats.score,
-            y = e.player.state.round_kills,
-            m = e.provider.steamid,
-            p = e.player.steamid;
-        if (void 0 !== TeamDatabase.where("mySteamId", m)[0]) {
-            if (1 === requeststate)
-                if (void 0 === PlayerRoster.where("playerSteamId", p)[0]) t = new Request(0, 0, 0, 1, 1, " ", 0, 0, 0, 0, 0, 0, "", "", "", 0, 0, 0, 0, 0, 0, null, null, 0, 0, 0, 0, 0, 0, 0, 0);
-                else {
-                    var c = TeamDatabase.where("mySteamId", m),
-                        d = PlayerRoster.where("playerSteamId", p);
-                    t = new Request(
-                        round,
-                        activity,
-                        bomb,
-                        d[0].mySteamId,
-                        d[0].playerSteamId,
-                        gamestate,
-                        requeststate,
-                        c[0].gamename,
-                        r,
-                        l,
-                        s,
-                        n,
-                        o,
-                        y,
-                        d[0].playerNickname,
-                        d[0].playerAvatar,
-                        d[0].playerFlag,
-                        d[0].playerElo,
-                        d[0].playerFaceitLevel,
-                        d[0].playerWins,
-                        d[0].playerPlayedGames,
-                        d[0].playerCurrentWinstreak,
-                        d[0].playerLongestWinstreak,
-                        c[0].ownTeamname,
-                        c[0].enemyTeamname,
-                        c[0].ownTeamAVGElo,
-                        c[0].enemyTeamAVGElo,
-                        c[0].winElo,
-                        c[0].lossElo,
-                        d[0].player20Kills,
-                        d[0].player20HS,
-                        d[0].player20KD,
-                        d[0].player20KR
-                    );
-                }
-            else {
-                void 0 === PlayerRoster.where("playerSteamId", p)[0] &&
-                    ((gamestate = 1), send((t = new Request(0, 0, 0, 1, 1, " ", 0, 0, 0, 0, 0, 0, "", "", "", 0, 0, 0, 0, 0, 0, null, null, 0, 0, 0, 0, 0, 0, 0, 0)), e, a), await getPlayerIdFromPlayer(p, m).catch(function (e) {}));
-                (c = TeamDatabase.where("mySteamId", m)), (d = PlayerRoster.where("playerSteamId", p));
-                t = new Request(
-                    round,
-                    activity,
-                    bomb,
-                    d[0].mySteamId,
-                    d[0].playerSteamId,
-                    gamestate,
-                    requeststate,
-                    c[0].gamename,
-                    r,
-                    l,
-                    s,
-                    n,
-                    o,
-                    y,
-                    d[0].playerNickname,
-                    d[0].playerAvatar,
-                    d[0].playerFlag,
-                    d[0].playerElo,
-                    d[0].playerFaceitLevel,
-                    d[0].playerWins,
-                    d[0].playerPlayedGames,
-                    d[0].playerCurrentWinstreak,
-                    d[0].playerLongestWinstreak,
-                    c[0].ownTeamname,
-                    c[0].enemyTeamname,
-                    c[0].ownTeamAVGElo,
-                    c[0].enemyTeamAVGElo,
-                    c[0].winElo,
-                    c[0].lossElo,
-                    d[0].player20Kills,
-                    d[0].player20HS,
-                    d[0].player20KD,
-                    d[0].player20KR
-                );
-            }
-            return t;
-        }
-        await axios
-            .get("https://open.faceit.com/data/v4/players", { params: { game_player_id: m, game: "csgo" }, headers: { Authorization: "Bearer " + Bearertoken } })
-            .then((e) => {
-                200 !== e.status ? !0 : (playerID = e.data.player_id);
-            })
-            .catch(function (e) {}),
-            await getFaceitMatch(playerID, m).catch(function (e) {}),
-            await getLiveStats(playerID, m, roomId).catch(function (e) {}),
-            returnEmpty();
-    }
+
+const talkedRecently = new Set();
+
+const getMonthsPassed = () => {
+    const startDate = new Date(2017, 06, 01); // month start at 0
+    const currentDate = new Date();
+    const monthDifference =
+      (currentDate.getFullYear() - startDate.getFullYear()) * 12 +
+      (currentDate.getMonth() - startDate.getMonth());
+    return monthDifference;
+};
+
+async function getLeaderboardId(Hub, Season) {
+    await axios.get(
+		'https://open.faceit.com/data/v4/leaderboards/hubs/' + Hub + '/seasons/' + Season, {
+        headers: {
+            'Authorization': 'Bearer ' + config.faceittoken
+		}
+	})
+	.then(response => {
+		if (response.status !== 200) {
+			isNull = true;
+		} else {
+			leaderboardId = response.data.leaderboard.leaderboard_id;
+		}
+	})
+	.catch(function (error) {});
 }
 
 
 
 
-async function getLiveStats(e, a, roomLive) {
-    await axios
-    .get(
-		"https://api.faceit.com/match/v2/match/" + roomLive,
-	  )
-        .then(async (response) => {
-            var test = response.data.payload;
-			var ownFactionNumber = checkForValue(test.teams.faction1, a) ? 1 : 2;
-			var enemyFactionNumber = 1 == ownFactionNumber ? 2 : 1;
-
-			var ownTeamname = test.teams["faction" + ownFactionNumber].name;
-			var enemyTeamname = test.teams["faction" + enemyFactionNumber].name;
-            var playerOwnElo = 0;
-            var playerEnemyElo = 0;
-            for (let x = 0; x < test.teams["faction" + ownFactionNumber].roster.length; x++){
-                playerOwnElo += test.teams["faction" + ownFactionNumber].roster[x].elo;
-            }
- 
-            for (let x = 0; x < test.teams["faction" + enemyFactionNumber].roster.length; x++) {
-                playerEnemyElo += test.teams["faction" + enemyFactionNumber].roster[x].elo;
-            }
- 
-            ownTeamAVGElo =  Math.floor(playerOwnElo / test.teams["faction" + ownFactionNumber].roster.length);		  
-            enemyTeamAVGElo = Math.floor(playerEnemyElo / test.teams["faction" + enemyFactionNumber].roster.length);
-            winElo = calculateRatingChange(test.teams["faction" + ownFactionNumber].stats.winProbability, 50);
-            lossElo = 50 - winElo;
-            (gamename = "Faceit"),
-            TeamDatabase.insert({ gamename: gamename, mySteamId: a, ownTeamname: ownTeamname, enemyTeamname: enemyTeamname, ownTeamAVGElo: ownTeamAVGElo, enemyTeamAVGElo: enemyTeamAVGElo, winElo: winElo, lossElo: lossElo });
-        })
-        .catch(function (e) {});
+async function trySwitch(channel, userstate, User, Faceitname, status) {
+    switch(status) {
+		case '!newmonth':
+			if(userstate["user-type"] === 'mod' || userstate["display-name"].toLowerCase() == channel.replace('#','')  || userstate["display-name"] == "Dietze_"){
+				month = getMonthsPassed();
+				client.action(channel, `New FPL-C. Season: ${month}`);
+				getLeaderboardId(config.HubId, month)
+			}else{
+				client.action(channel, `@` + User + ` Mod only command`);
+			}
+			break;
+		case '!feedback':
+			client.action(channel, `@` + User + ` If you have any suggestions or bug reports - please send me a Steammessage: http://steamcommunity.com/id/Dietze_`);
+			break;
+		case '!live':
+			await getFaceitId(Faceitname);
+			await getLiveMatch(channel, Faceitname, Identifikation);
+			if(roomId != null){
+				await getLiveStats(channel, Faceitname, roomId);
+			}
+			break;
+		case '!fpl':
+		case '!info':
+		case '!fpl-c':
+			client.action(channel, `The FPL-Challenger will serve as a way for upcoming talent to compete with like-minded players for their next step in Counter-Strike | Info: http://bit.ly/FPLCircuit | Leaderboard: http://bit.ly/FPL-C-${month}`);
+			break;
+		case '!rank':
+		case '!fplc':
+		case '!leaderboard':
+			played = 0;
+			for(i = 0; i <= 150; i += 50){				
+				await getFaceit(i, 50, channel, User, Faceitname);
+			}
+			sleep(4000).then(() => { if(played == 0)client.action(channel, `${Faceitname} has not yet played a game in the FPLC.`); }); 
+			break;
+		case '!stats':
+			await getFaceitId(Faceitname);
+			await getStats20(channel, User, Identifikation, Faceitname);
+			break;
+		case '!fplcstats':
+			inList = 0;
+			for(i = 0; i <= 1000; i += 100){					
+				getStats(i,100, channel, User, Faceitname);
+			}
+			sleep(6000).then(() => { if(inList == 0)client.action(channel, `${Faceitname} has not yet played a game in the FPLC.`); }); 
+			break;
+		case '!last':
+			await getFaceitId(Faceitname);
+			await getlast(channel, User, Identifikation, Faceitname);
+			break;
+		case '!cmd':
+		case '!command':
+		case '!commands':
+			client.action(channel, `@` + User + ` you can use the following Faceit commands: !stats <name> !last <name> !live <name> || FPL-C Commands: !rank <name> !fplcstats <name> !feedback`);
+			break;
+		default:
+			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
+				getFaceit(0,50, channel, userstate["display-name"]);
+				getFaceit(51,100, channel, userstate["display-name"]);
+			  }*/
+		}
 }
 
 
 
 
 
+client.on("chat", (channel, userstate, commandMessage, self) => {
+	if(userstate["display-name"] != config.username){
+		User = userstate["display-name"]
 
+		config.channel.forEach((streamer, index) => {
+			if(channel == streamer){
+				faceitUsername = config.faceitUsername[index];
+			}
+		}); 
+		
+		if(commandMessage.split(" ")[1] != undefined && commandMessage.split(" ")[1].includes("@")) User = commandMessage.split(" ")[1].replace('@','');
+		if (talkedRecently.has(commandMessage)) {
+				//client.action(channel, `Command in cooldown`); 
+		}else {
+			talkedRecently.add(commandMessage);
+			setTimeout(() => {
+			  // Removes the user from the set after a minute
+			  talkedRecently.delete(commandMessage);
+			}, config.cooldown);
 
-async function getFaceitMatch(e, a) {
-    await axios
-        .get("https://api.faceit.com/match/v1/matches/groupByState", { params: { userId: e } })
-        .then(async (t) => {
-            if (((names = Object.getOwnPropertyNames(t.data.payload)), "VOTING" === names[0] || "READY" === names[0] || "ONGOING" === names[0])) {
-                roomId = t.data.payload[names[0]][0].id;
-                returnEmpty();
+			if (commandMessage.split(" ")[1] == undefined || commandMessage.split(" ")[1].includes("@")){
+				Faceitname = faceitUsername;
+			} else {
+				Faceitname = commandMessage.split(" ")[1];
+			}	
+			trySwitch(channel, userstate, User, Faceitname, commandMessage.split(" ")[0])
+		}
+	}  
+});
 
-            } else
-                PlayerRoster.delete("mySteamId", a),
-                    PlayerRoster.delete("mySteamId", a),
-                    PlayerRoster.delete("mySteamId", a),
-                    PlayerRoster.delete("mySteamId", a),
-                    TeamDatabase.delete("mySteamId", a),
-                    (gamename = "MM"),
-                    TeamDatabase.insert({ gamename: gamename, mySteamId: a, wnTeamname: "", enemyTeamname: "", ownTeamAVGElo: 0, enemyTeamAVGElo: 0, winElo: 0, lossElo: 0 });
-        })
-        .catch(function (e) {});
-}
-async function getEloFromPlayer(e) {
-    await axios
-        .get("https://open.faceit.com/data/v4/players/" + e, { headers: { Authorization: "Bearer " + Bearertoken } })
-        .then((e) => {
-            200 !== e.status
-                ? (isNull = !0)
-                : ((NickPlayerId = e.data.nickname),
-                  (playerSteamId = e.data.steam_id_64),
-                  (playerTempElo = e.data.games.csgo.faceit_elo),
-                  (playerAvatar = e.data.avatar),
-                  (playerFlag = "https://cdn-frontend.faceit.com/web/112-1536332382/src/app/assets/images-compress/flags/" + e.data.country.toUpperCase() + ".png"),
-                  (playerFaceitlvl = e.data.games.csgo.skill_level));
-        })
-        .catch(function (e) {});
-}
-async function getStatsFromPlayer(e) {
-    await axios
-        .get("https://open.faceit.com/data/v4/players/" + e + "/stats/csgo", { headers: { Authorization: "Bearer " + Bearertoken } })
-        .then((e) => {
-            200 !== e.status
-                ? (isNull = !0)
-                : ((playerWins = e.data.lifetime.Wins), (playerPlayedGames = e.data.lifetime.Matches), (playerCurrentWinstreak = e.data.lifetime["Current Win Streak"]), (playerLongestWinstreak = e.data.lifetime["Longest Win Streak"]));
-        })
-        .catch(function (e) {});
-}
-async function getPlayerIdFromPlayer(e, a) {
-    await axios
-        .get("https://open.faceit.com/data/v4/players", { params: { game_player_id: e, game: "csgo" }, headers: { Authorization: "Bearer " + Bearertoken } })
-        .then(async (e) => {
-            200 === e.status &&
-                ((requeststate = 1),
-                (playerID = e.data.player_id),
-                (newsteamid = e.data.games.csgo.game_player_id),
-                await getStatsFromPlayer(playerID),
-                await getEloFromPlayer(playerID),
-                await getLast20Matches(playerID),
-                PlayerRoster.insert({
-                    mySteamId: a,
-                    playerSteamId: newsteamid,
-                    playerNickname: NickPlayerId,
-                    playerElo: playerTempElo,
-                    playerAvatar: playerAvatar,
-                    playerFlag: playerFlag,
-                    playerFaceitLevel: playerFaceitlvl,
-                    playerWins: playerWins,
-                    playerPlayedGames: playerPlayedGames,
-                    playerCurrentWinstreak: playerCurrentWinstreak,
-                    playerLongestWinstreak: playerLongestWinstreak,
-                    player20Kills: playerKillsAll,
-                    player20HS: playerHSAll,
-                    player20KD: playerKDAll,
-                    player20KR: playerKRAll,
-                }),
-                (requeststate = 0));
-        })
-        .catch(function (t) {
-            404 === t.response.status &&
-                ((isNull = !0),
-                PlayerRoster.insert({
-                    mySteamId: a,
-                    playerSteamId: e,
-                    playerNickname: "No Faceitaccount",
-                    playerElo: 0,
-                    playerAvatar: "",
-                    playerFlag: "",
-                    playerFaceitLevel: 0,
-                    playerWins: 0,
-                    playerPlayedGames: 0,
-                    playerCurrentWinstreak: 0,
-                    playerLongestWinstreak: 0,
-                    player20Kills: 0,
-                    player20HS: 0,
-                    player20KD: 0,
-                    player20KR: 0,
-                }));
-        });
-}
-var playerKills = 0,
-    playerHS = 0,
-    playerKD = 0,
-    playerKR = 0,
-    playerKillsAll = 0,
-    playerHSAll = 0,
-    playerKDAll = 0,
-    playerKRAll = 0;
-async function getLast20Matches(e) {
-    await axios
-        .get("https://api.faceit.com/stats/v1/stats/time/users/" + e + "/games/csgo?size=50", {})
-        .then(async (a) => {
-            if (200 === a.status) {
-                for (playerKillsAll = 0, playerHSAll = 0, playerKDAll = 0, laenge = 20, playerKRAll = 0, i = 0; i < laenge; i++)
-                    if (a.data[i].gameMode !== "5v5") {
-                        laenge = laenge + 1;
-                    } else {
-                        (playerKillsAll += parseInt(a.data[i].i6)), (playerHSAll += parseInt(a.data[i].c4 * 100)), (playerKDAll += parseInt(a.data[i].c2 * 100)), (playerKRAll += parseInt(a.data[i].c3 * 100));
-                    }
-                (playerKillsAll = Math.round(playerKillsAll / 20)), (playerHSAll = Math.round(playerHSAll / 2000)), (playerKDAll = (playerKDAll / 2000).toFixed(2)), (playerKRAll = (playerKRAll / 2000).toFixed(2));
-            }
-        })
-        .catch(function (e) {});
-}
-var matchid = "";
-
-function calculateRatingChange(e, a) {
-    var gain = Math.round(a - e * a)
-    return gain;
-}
 
 function checkForValue(e, a) {
     for (let t = 0; t < e.roster.length; t++){
@@ -377,38 +176,224 @@ function checkForValue(e, a) {
     return false;
 }
 
-function Database() {
-    (this.datensatz = []),
-        (this.insert = function (e) {
-            this.datensatz.push(e);
-        }),
-        (this.where = function (e, a) {
-            if (!e) return this.datensatz;
-            for (var t = [], r = 0; r < this.datensatz.length; r++) this.datensatz[r][e] === a && t.push(this.datensatz[r]);
-            return t;
-        }),
-        (this.update = function (e, a, t, r) {
-            for (var l = 0; l < this.datensatz.length; l++) this.datensatz[l][e] === a && (this.datensatz[l][t] = r);
-        }),
-        (this.delete = function (e, a) {
-            if (!e) {
-                var t = this.datensatz;
-                return (this.datensatz = []), t;
-            }
-            for (var r = [], l = 0; l < this.datensatz.length; l++)
-                if (this.datensatz[l][e] == a) {
-                    var s = this.datensatz.splice(l, 1);
-                    r = r.concat(s);
-                }
-            return r;
-        });
+function calculateRatingChange(e, a) {
+    var gain = Math.round(a - e * a)
+    return gain;
 }
-function Sleep(e) {
-    return new Promise((a) => setTimeout(a, e));
+
+async function getLiveMatch(chanLive, userLive, idLive) {
+	await axios
+	  .get(
+		"https://api.faceit.com/match/v1/matches/groupByState?userId=" + idLive,
+	  )
+	  .then(async response => {
+		if (response.status !== 200) {
+		  var isNull = true;
+		} else {  
+		  var length = 20;
+		  var test = response.data;
+		  if (Object.keys(test.payload).length == 0) {
+			client.action(chanLive, `${Faceitname} is currently not playing a faceitmatch`);
+			roomId = null;
+			return;
+		  }		
+		  
+		let names = Object.getOwnPropertyNames(test.payload)
+		roomId = response.data.payload[names[0]][0].id;  
+		}
+	  })
+	  .catch(function(error) {console.log(error)});
+  }
+
+
+  async function getLiveStats(chanLive, userLive, roomLive) {
+	await axios
+	  .get(
+		"https://api.faceit.com/match/v2/match/" + roomLive,
+	  )
+	  .then(async response => {
+		if (response.status !== 200) {
+		  var isNull = true;
+		} else {  
+			var test = response.data.payload;
+			var ownFactionNumber = checkForValue(test.teams.faction1, userLive) ? 1 : 2;
+			var enemyFactionNumber = 1 == ownFactionNumber ? 2 : 1;
+
+			var teamname1 = test.teams["faction" + ownFactionNumber].name;
+			var teamname2 = test.teams["faction" + enemyFactionNumber].name;
+			
+			var link = "https://www.faceit.com/de/csgo/room/" + roomLive;
+			if(test.entity.id == config.HubId){
+				client.action(chanLive, `Inspected user: ${userLive} | FPL-C game | ${teamname1} vs ${teamname2} | ROOM: ${link}`);
+			   return;
+		   }
+
+		   var playerOwnElo = 0;
+		   var playerEnemyElo = 0
+
+			for (let e = 0; e < test.teams["faction" + ownFactionNumber].roster.length; e++){
+				playerOwnElo += test.teams["faction" + ownFactionNumber].roster[e].elo;
+			}
+
+			for (let e = 0; e < test.teams["faction" + enemyFactionNumber].roster.length; e++) {
+				playerEnemyElo += test.teams["faction" + enemyFactionNumber].roster[e].elo;
+			}
+
+			ownTeamAVGElo =  Math.floor(playerOwnElo / test.teams["faction" + ownFactionNumber].roster.length);		  
+			enemyTeamAVGElo = Math.floor(playerEnemyElo / test.teams["faction" + enemyFactionNumber].roster.length);
+
+			winElo = calculateRatingChange(test.teams["faction" + ownFactionNumber].stats.winProbability, 50);
+			lossElo = 50 - winElo;
+
+			client.action(chanLive, `Inspected user: ${userLive} | Faceit PUG | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo} | ROOM: ${link}`);
+
+		}
+	  })
+	  .catch(function(error) {console.log(error)});
+  }
+
+
+async function getStats(x, y, chan, user, name) {
+    await axios.get('https://open.faceit.com/data/v4/hubs/' + config.HubId + '/stats?offset=' + x + '&limit=' + y, {
+        headers: {
+            'Authorization': 'Bearer ' + config.faceittoken
+		}
+	})
+	.then(response => {
+		if (response.status !== 200) {
+			isNull = true;
+		} else {
+			response.data.players.forEach((player, index) => {
+				if (player.nickname == name)
+				{
+					inList = 1;
+					client.action(chan, `Here are the FPLC stats from ${name}: Avg. Kills: ${player.stats["Average Kills"]} - Avg. HS%: ${player.stats["Average Headshots %"]}% - Avg. K/D: ${player.stats["Average K/D Ratio"]} - Win Rate: ${player.stats["Win Rate %"]}`);
+				}
+			})
+		}
+	})
+	.catch(function (error) {});
 }
-function returnEmpty() {
-    return new Request(0, 0, 0, 0, 0, " ", 0, 0, 0, 0, 0, 0, "", "", "", 0, 0, 0, 0, 0, 0, null, null, 0, 0, 0, 0, 0, 0, 0, 0);
+
+
+
+
+async function getStats20(chan, user, idStats, name20) {
+  await axios
+    .get(
+      "https://api.faceit.com/stats/v1/stats/time/users/" + idStats + "/games/csgo",
+    )
+    .then(response => {
+      if (response.status !== 200) {
+        var isNull = true;
+      } else { 
+        length = 20;
+        var test = response.data;
+        if (test.length == 0)
+			    return;
+
+        if (test.length <=20){
+          length = test.length;
+        }
+        var kills = 0, avgKills= 0, HS = 0, avgHs = 0,  divid = 0, KD = 0, avgKD = 0, KR = 0, avgKR = 0;
+        for (var i = 0; i < length; i++) {
+          if (test[i].gameMode !== '5v5') {
+            length = length + 1;
+          } else {
+            divid = divid + 1;
+            kills = parseInt(test[i].i6) + kills;
+            HS = parseInt(test[i].c4 * 100) + HS;
+            KD = parseInt(test[i].c2 * 100) + KD;
+            KR = parseInt(test[i].c3 * 100) + KR;
+          }
+        }
+        avgKills = Math.round(kills / divid);
+        avgHs = Math.round(HS / divid / 100);
+        avgKD = (KD / divid / 100).toFixed(2);
+        avgKR = (KR / divid / 100).toFixed(2);
+
+        client.action(
+          chan,
+          `Here are the stats of the last ${divid} matches [${name20}]: Level: ${faceitlvl} - Elo: ${faceitelo} - Avg. Kills: ${avgKills} - Avg. HS%: ${avgHs}% - Avg. K/D: ${avgKD} - Avg. K/R: ${avgKR}`);
+      }
+    })
+    .catch(function(error) {});
 }
-http.listen(3001, function () {
-    console.log("listening on *:3001");
-});
+
+
+
+async function getFaceitId(userLast) {
+    await axios.get('https://open.faceit.com/data/v4/players?nickname=' + userLast, {
+        headers: {
+            'Authorization': 'Bearer ' + config.faceittoken
+		}
+	})
+	.then(response => {
+		if (response.status !== 200) {
+			isNull = true;
+		} else {
+			Identifikation = response.data.player_id;
+			faceitlvl = response.data.games.csgo.skill_level;
+			faceitelo = response.data.games.csgo.faceit_elo;
+		}
+	})
+	.catch(function (error) {
+		client.action(chan, `@` + user + `, I couldn't find a faceitname with ${userLast}`);
+	});
+}
+
+
+
+async function getlast(chan, user, idLast, userLast) {
+    await axios.get(
+		'https://api.faceit.com/stats/v1/stats/time/users/' + idLast + '/games/csgo?size=1', {
+	})
+	.then(response => {
+		if (response.status !== 200) {
+			isNull = true;
+		} else {
+			last = response.data[0];
+			lastmatchid = last.matchId
+			var won = (last.teamId == last.i2) ? "won" : "lost";
+			client.action(chan, `${userLast} ${won} last map on ${last.i1} with a score of ${last.i18}. Stats: Kills: ${last.i6} - Assists: ${last.i7} - Deaths: ${last.i8} - HS%: ${last.c4}%`);
+		}
+	})
+	.catch(function (error) {});
+}
+
+async function getFaceit(x, y, chan, user, name) {
+    await axios.get('https://open.faceit.com/data/v4/leaderboards/' + leaderboardId + '?offset=' + x + '&limit=' + y, {
+        headers: {
+            'Authorization': 'Bearer ' + config.faceittoken
+		}
+	})
+	.then(response => {
+		if (response.status !== 200) {
+			isNull = true;
+		} else {
+			if(response.data.leaderboard.status == 'UPCOMING'){
+				played = 2;
+				client.action(chan, `There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2020 starts, Sat. 16 Jan 2021, 12:00 CET`);
+			}else{
+				response.data.items.forEach((player, index) => {
+					if (player.position == 2)
+					{
+						secondplayer = player.player.nickname;
+						secondelo = player.points;
+					}
+					
+					if (player.player.nickname == name)
+					{
+						played = 1;
+						if (player.position <= 2){
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points over the 3. place [${response.data.items[2].player.nickname}]: ${player.points - response.data.items[2].points}`);
+						} else {
+							client.action(chan, `${name} current rank is ${player.position} - Streak: ${player.current_streak} - Won: ${player.won} - Lost: ${player.lost} - Points needed for 2. place [${secondplayer}]: ${secondelo - player.points + 1}`);
+						}
+					}
+				})
+			}
+		}
+	})
+	.catch(function (error) {});
+}
