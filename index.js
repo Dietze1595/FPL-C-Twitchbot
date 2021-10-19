@@ -125,10 +125,6 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 			client.action(channel, `@` + User + ` you can use the following Faceit commands: !stats <name> !last <name> !live <name> || FPL-C Commands: !rank <name> !fplcstats <name> !feedback`);
 			break;
 		default:
-			  /*if(commandMessage.includes("rank") || commandMessage.includes("platz")|| commandMessage.includes("stats")){
-				getFaceit(0,50, channel, userstate["display-name"]);
-				getFaceit(51,100, channel, userstate["display-name"]);
-			  }*/
 		}
 }
 
@@ -137,7 +133,6 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
 
 
 client.on("chat", (channel, userstate, commandMessage, self) => {
-	if(userstate["display-name"] != config.username){
 		User = userstate["display-name"]
 
 		config.channel.forEach((streamer, index) => {
@@ -163,7 +158,6 @@ client.on("chat", (channel, userstate, commandMessage, self) => {
 			}	
 			trySwitch(channel, userstate, User, Faceitname, commandMessage.split(" ")[0])
 		}
-	}  
 });
 
 
