@@ -175,6 +175,11 @@ function calculateRatingChange(e, a) {
     return gain;
 }
 
+function calculateRatingChangeOld(e, a) {
+    var t, r;
+    return (r = a - e), (t = 1 / (1 + Math.pow(10, r / 400))), Math.round(50 * (1 - t));
+}
+
 async function getLiveMatch(chanLive, userLive, idLive) {
 	await axios
 	  .get(
@@ -236,8 +241,9 @@ async function getLiveMatch(chanLive, userLive, idLive) {
 			ownTeamAVGElo =  Math.floor(playerOwnElo / test.teams["faction" + ownFactionNumber].roster.length);		  
 			enemyTeamAVGElo = Math.floor(playerEnemyElo / test.teams["faction" + enemyFactionNumber].roster.length);
 
-			winElo = calculateRatingChange(test.teams["faction" + ownFactionNumber].stats.winProbability, 50);
-			lossElo = 50 - winElo;
+			winElo = 50;
+		    	winElo = (test.teams["faction" + ownFactionNumber].stats.winProbability == null) ? calculateRatingChangeOld(ownTeamAVGElo, enemyTeamAVGElo) : calculateRatingChange(test.teams["faction" + ownFactionNumber].stats.winProbability, 50);
+		   	lossElo = 50 - winElo;
 
 			client.action(chanLive, `Inspected user: ${userLive} | Faceit PUG | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo} | ROOM: ${link}`);
 
