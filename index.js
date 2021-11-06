@@ -242,7 +242,7 @@ async function getLiveMatch(chanLive, userLive, idLive) {
 			enemyTeamAVGElo = Math.floor(playerEnemyElo / test.teams["faction" + enemyFactionNumber].roster.length);
 
 			winElo = 50;
-		    	winElo = (test.teams["faction" + ownFactionNumber].stats.winProbability == null) ? calculateRatingChangeOld(ownTeamAVGElo, enemyTeamAVGElo) : calculateRatingChange(test.teams["faction" + ownFactionNumber].stats.winProbability, 50);
+		    	winElo = (test.teams["faction" + ownFactionNumber].stats == undefined) ? calculateRatingChangeOld(ownTeamAVGElo, enemyTeamAVGElo) : calculateRatingChange(test.teams["faction" + ownFactionNumber].stats.winProbability, 50);
 		   	lossElo = 50 - winElo;
 
 			client.action(chanLive, `Inspected user: ${userLive} | Faceit PUG | ${teamname1} vs ${teamname2} - AVG. ELO: ${ownTeamAVGElo} Win Elo: ${winElo} - Loss Elo: ${lossElo} AVG. ELO: ${enemyTeamAVGElo} | ROOM: ${link}`);
