@@ -82,10 +82,10 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
                 break;
 
             case '!live':
-                await axios.getFaceitId(Faceitname, channel, User);
-                await axios.getLiveMatch(channel, Faceitname, Identifikation);
+                await getFaceitId(Faceitname, channel, User);
+                await getLiveMatch(channel, Faceitname, Identifikation);
                 if (roomId != null) {
-                    await axios.getLiveStats(channel, Faceitname, roomId);
+                    await getLiveStats(channel, Faceitname, roomId);
                 }
                 break;
 
@@ -100,15 +100,15 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
             case '!leaderboard':
                 played = 0;
                 for (i = 0; i <= 150; i += 50) {
-                    await axios.getFaceit(i, 50, channel, User, Faceitname);
+                    await getFaceit(i, 50, channel, User, Faceitname);
                 }
 
                 sleep(4000).then(() => { if (played == 0) client.say(channel, `${Faceitname} has not yet played a game in the FPL-C.`); });
                 break;
 
             case '!stats':
-                await axios.getFaceitId(Faceitname, channel, User);
-                await axios.getStats20(channel, User, Identifikation, Faceitname);
+                await getFaceitId(Faceitname, channel, User);
+                await getStats20(channel, User, Identifikation, Faceitname);
                 break;
 
             case '!fplcstats':
@@ -121,8 +121,8 @@ async function trySwitch(channel, userstate, User, Faceitname, status) {
                 break;
 
             case '!last':
-                await axios.getFaceitId(Faceitname, channel, User);
-                await axios.getlast(channel, User, Identifikation, Faceitname);
+                await getFaceitId(Faceitname, channel, User);
+                await getlast(channel, User, Identifikation, Faceitname);
                 break;
 
             case '!cmd':
@@ -341,7 +341,7 @@ async function getFaceit(x, y, chan, user, name) {
         if (response.status == 200) {
             if (response.data.leaderboard.status == 'UPCOMING' && played == 0) {
                 played = 2;
-                client.say(chan, `There is no leaderboard at the moment.`);
+                client.say(chan, `There is no leaderboard at the moment. The FPL-Challenger EU Qualifiers December Edition 2021 starts, Sat. 15 Jan 2022, 12:00 CET`);
             } else {
                 response.data.items.forEach((player) => {
                     if (player.position == 2) {
